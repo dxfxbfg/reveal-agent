@@ -213,7 +213,7 @@ module.exports = async (req, res) => {
               title: codeResult.title,
               html: inspectResult.html,
               ai: true,
-              model: 'glm-4-flash',
+              model: 'minimax/minimax-01-mini',
               mode,
             });
           } catch (err) {
