@@ -1,7 +1,8 @@
 // Content Planner Agent - 内容策划师
 // 职责：分析用户需求，生成结构化幻灯片大纲
+// 渠道：MiniMax M2.7（主力）
 
-const { callZhipuAI } = require('../utils/ai-client');
+const { callMiniMax, MINIMAX_MODELS } = require('../utils/ai-client');
 
 function buildPrompt(pages, userPrompt) {
   return `你是一个专业的幻灯片内容策划师。请根据用户的描述，生成一个 JSON 格式的演示文稿大纲。
@@ -35,10 +36,10 @@ async function execute({ prompt, pages = 8 }) {
   }
 
   const numPages = Math.min(Math.max(parseInt(pages) || 8, 4), 20);
-  const aiContent = await callZhipuAI([
+  const aiContent = await callMiniMax([
     { role: 'system', content: '你是一个专业的幻灯片内容策划师。' },
     { role: 'user', content: buildPrompt(numPages, prompt.trim()) }
-  ], 4000);
+  ], MINIMAX_MODELS.m27, 4000);
 
   // 安全提取 JSON
   const jsonMatch = aiContent.match(/\{[\s\S]*\}/);

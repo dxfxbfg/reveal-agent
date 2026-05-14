@@ -1,7 +1,8 @@
 // Visual Designer Agent - 视觉设计师
 // 职责：根据大纲内容，设计配色方案、字体、背景效果
+// 渠道：MiniMax M2.7
 
-const { callZhipuAI } = require('../utils/ai-client');
+const { callMiniMax, MINIMAX_MODELS } = require('../utils/ai-client');
 
 function buildPrompt(outline, theme, transition) {
   const outlineJson = JSON.stringify(outline, null, 2);
@@ -23,7 +24,7 @@ ${outlineJson}
   "transition": "${transition}",
   "colorPalette": {
     "primary": "#667eea",
-    "secondary": "#764ba2", 
+    "secondary": "#764ba2",
     "accent": "#f093fb",
     "background": "#1a1a2e",
     "text": "#ffffff",
@@ -64,10 +65,10 @@ async function execute({ outline, theme = 'black', transition = 'slide' }) {
     throw new Error('缺少大纲数据');
   }
 
-  const aiContent = await callZhipuAI([
+  const aiContent = await callMiniMax([
     { role: 'system', content: '你是一个专业的幻灯片视觉设计师，擅长配色和视觉设计。' },
     { role: 'user', content: buildPrompt(outline, theme, transition) }
-  ], 4000);
+  ], MINIMAX_MODELS.m27, 4000);
 
   // 安全提取 JSON
   const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
