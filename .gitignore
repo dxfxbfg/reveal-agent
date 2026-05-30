@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+*.log
+output/
+uploads/
+.env
+.git/
+*.pyc
+__pycache__/
+*.swp
+*.swo
+*~

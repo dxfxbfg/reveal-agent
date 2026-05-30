@@ -1,0 +1,21 @@
+{
+  "name": "reveal-agent-backend",
+  "version": "1.0.0",
+  "description": "reveal-agent backend: 5-Agent pipeline + RAG + WebSocket",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "chromadb": "^3.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "puppeteer": "^22.0.0",
+    "uuid": "^10.0.0",
+    "ws": "^8.17.0"
+  }
+}

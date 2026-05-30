@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PPTX Ready HTML Consulting Deck</title>
+  <style>
+    :root {
+      --b0:#EFF6FF; --b2:#BFDBFE; --b7:#1D4ED8; --b8:#1E40AF; --b9:#1E3A8A;
+      --g0:#F9FAFB; --g1:#F3F4F6; --g2:#E5E7EB; --g4:#9CA3AF; --g5:#6B7280; --g7:#374151; --g8:#1F2937; --g9:#111827;
+      --gn:#059669; --gn-bg:#ECFDF5; --gn-bd:#A7F3D0; --au:#D97706; --au-bg:#FFFBEB; --au-bd:#FDE68A; --r:#DC2626; --r-bg:#FEF2F2; --r-bd:#FECACA;
+      --bw:1px; --radius:6px;
+    }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif; background:#E5E7EB; color:var(--g8); line-height:1.5; }
+    .S { width:1080px; height:608px; margin:24px auto; background:#FFF; position:relative; overflow:hidden; display:flex; flex-direction:column; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+    .TB { height:32px; background:var(--b9); color:#FFF; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
+    .TB .logo { font-size:11px; font-weight:800; letter-spacing:1px; }
+    .TB .meta { font-size:9px; color:rgba(255,255,255,.65); }
+    .TS { padding:14px 40px 10px; border-bottom:var(--bw) solid var(--g2); flex-shrink:0; }
+    .TS h1 { font-size:24px; line-height:1.25; color:var(--g9); font-weight:900; letter-spacing:0; }
+    .TS .sub { margin-top:4px; font-size:11px; color:var(--g5); }
+    .BA { flex:1; padding:12px 40px 28px; overflow:hidden; }
+    .PF { position:absolute; bottom:7px; height:16px; font-size:8.5px; color:var(--g4); display:flex; align-items:center; }
+    .PFL { left:40px; } .PFR { right:40px; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; height:100%; }
+    .exhibit { display:grid; grid-template-columns:1.55fr .9fr; gap:14px; height:100%; }
+    .card { border:var(--bw) solid var(--g2); border-radius:var(--radius); background:#FFF; overflow:hidden; }
+    .card-title { padding:7px 10px; background:var(--b0); color:var(--b8); font-size:12px; font-weight:800; border-bottom:var(--bw) solid var(--b2); }
+    .card-body { padding:9px 10px; font-size:10.5px; color:var(--g7); }
+    .callout { border:var(--bw) solid var(--au-bd); border-left:4px solid var(--au); background:var(--au-bg); border-radius:var(--radius); padding:10px 12px; font-size:10.5px; color:var(--g8); }
+    .ex-note { border-top:var(--bw) solid var(--g2); padding-top:6px; font-size:8.5px; color:var(--g5); line-height:1.35; }
+    .ex-note b { color:var(--g7); }
+    .bar-chart { display:flex; flex-direction:column; gap:8px; }
+    .bar-row { display:grid; grid-template-columns:72px 1fr 42px; gap:8px; align-items:center; font-size:9.5px; color:var(--g7); }
+    .bar-row span { font-weight:700; color:var(--g8); }
+    .bar-row b { text-align:right; color:var(--b8); font-size:10px; }
+    .bar-track { height:14px; background:var(--g1); border:var(--bw) solid var(--g2); border-radius:3px; overflow:hidden; }
+    .bar-track i { display:block; height:100%; background:var(--b7); }
+    .loop { display:flex; align-items:stretch; gap:7px; }
+    .loop-step { flex:1; border:var(--bw) solid var(--b2); background:var(--b0); border-radius:var(--radius); padding:8px 9px; }
+    .loop-step b { display:block; color:var(--b8); font-size:10px; margin-bottom:4px; }
+    .loop-step span { font-size:10.5px; color:var(--g8); font-weight:700; }
+    .loop-arrow { display:flex; align-items:center; color:var(--g4); font-size:16px; }
+    .evidence-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px; }
+    .evidence-row > div { border:var(--bw) solid var(--g2); border-radius:var(--radius); padding:7px 8px; background:var(--g0); font-size:9.5px; color:var(--g7); }
+    @media print { body{background:#FFF;} .S{margin:0; page-break-after:always;} }
+  </style>
+</head>
+<body>
+  <section class="S" id="p01">
+    <div class="TB"><div class="logo">BRAND</div><div class="meta">SECTION</div></div>
+    <div class="TS">
+      <h1>结论式标题写在这里</h1>
+      <div class="sub">副标题补充背景、对象和范围。</div>
+    </div>
+    <div class="BA">
+      <div class="exhibit">
+        <div class="card">
+          <div class="card-title">主证据对象</div>
+          <div class="card-body">
+            <div class="bar-chart">
+              <div class="bar-row"><span>场景 A</span><div class="bar-track"><i style="width:72%"></i></div><b>72</b></div>
+              <div class="bar-row"><span>场景 B</span><div class="bar-track"><i style="width:54%"></i></div><b>54</b></div>
+              <div class="bar-row"><span>场景 C</span><div class="bar-track"><i style="width:36%"></i></div><b>36</b></div>
+            </div>
+            <div class="ex-note"><b>Source:</b> 替换为真实来源或假设。<b>Confidence:</b> medium.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Implication</div>
+          <div class="card-body">右侧只放结论、建议、假设或决策请求。避免截图、外链、复杂 SVG、canvas。</div>
+        </div>
+      </div>
+    </div>
+    <div class="PF PFL">PPTX Ready HTML Consulting</div>
+    <div class="PF PFR">PAGE 01/01</div>
+  </section>
+</body>
+</html>

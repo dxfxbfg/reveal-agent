@@ -1,0 +1,256 @@
+[
+  {
+    "id": "1a2be0a4-80ee-4edc-ae5f-af70a53bde29",
+    "text": "# 演示文稿设计最佳实践 2024\n\n2024年演示文稿设计最佳实践包括以下关键原则：\n\n1. **简洁至上原则**：幻灯片上的文字应尽量精简，每张幻灯片不超过6行文字，每行不超过6个词。重点信息应通过视觉元素传达，而非长篇文字。\n\n2. **高质量视觉素材**：使用高分辨率图片、图标和插画增强视觉吸引力。避免使用低质量或拉伸失真的图片，建议使用专业图库和统一的图标风格（如Flat Design或Isometric风格）。\n\n3. **一致视觉风格**：保持配色方案、字体和布局风格的一致性。建议使用品牌色或选择2-3种协调色彩；字体不超过2种（标题用无衬线字体，正文可用衬线字体）；确保每张幻灯片的对齐方式和间距统一。\n\n4. **10-20-30法则**：不超过10页幻灯片、控制在20分钟内、使用30号以上字体。\n\n5. **数据可视化**：通过数据支撑观点，用类比解释复杂概念，重复关键信息强化记忆。",
+    "metadata": {
+      "source": "设计行业通用指南、现代设计趋势报告",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "9cac242e-a37e-4aa4-87ce-1914b0cbb143",
+    "text": "# 2024演示主题趋势与热门话题\n\n2024年最受欢迎的PPT演示主题集中在以下五大领域：\n\n1. **AI与机器学习**：人工智能在各行业的应用案例\n\n2. **可持续发展与ESG**：环境、社会和治理相关议题\n\n3. **远程办公与混合工作模式**：新时代工作方式探讨\n\n4. **心理健康与职场福祉**：员工关怀与组织健康\n\n5. **数字化转型**：企业技术升级与创新\n\n同时，2024年演示设计趋势强调极简主义与创意视觉的融合，包括动态渐变背景、3D元素、AI辅助设计、沉浸式交互设计。数据可视化变得更加生动，演讲者与观众的双向互动成为关键特征。",
+    "metadata": {
+      "source": "Slidebean Presentation Industry Report 2024, PowerEffect Business Presentation Trends 2024",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "3d81e6b8-7ce3-4c83-b26c-d9b0e2495c9b",
+    "text": "# 演示结构设计指南 - 七要素与时间分配\n\n有效的演示结构应包含以下七个核心要素：\n\n1. **开场钩子（Hook）**：立即吸引听众注意力（用故事/数据/问题）\n2. **背景设定（Bridge）**：建立背景和设定期望\n3. **核心论点（Thesis）**：明确表达演讲主旨\n4. **三个主要论点（Three Main Points）**：建议使用\"3个要点法则\"组织主体内容\n5. **总结（Summary）**：清晰回顾核心要点\n6. **行动号召（Call to Action）**：明确告知听众下一步\n7. **令人印象深刻的收尾（Memorable Close）**\n\n**时间分配建议**：开场10% / 主体75% / 结尾15%\n\n**金字塔原理**：先表达核心结论（顶层），再提供关键论据（支撑层），最后补充详细数据和细节（底层）。这种方法帮助听众快速抓住重点，特别适合商业汇报场景。",
+    "metadata": {
+      "source": "HubSpot, McKinsey, Indeed Career Guide, Canva",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "0fbd92de-45a6-4d45-bfac-a07ebbc97741",
+    "text": "# 维基百科概述与创立背景\n\nWikipedia（维基百科）是由吉米·威尔士（Jimmy Wales）于2001年1月15日创立的多语言协作式免费百科全书。它基于Wiki技术，任何人都可以免费参与编辑和分享内容。Wikipedia是全球访问量最大的参考网站之一，由非营利组织Wikimedia Foundation运营。名称由\"wiki\"（一种协作技术）+ \"encyclopedia\"（百科全书）组合而成，体现了其开放协作的理念。",
+    "metadata": {
+      "source": "Wikipedia official and historical documentation",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "f27817d9-1ea4-4481-8218-6c19d5d99ca5",
+    "text": "# 维基百科发展历程与创始人\n\n维基百科发展历程：\n1. 2001年1月15日：Wikipedia正式上线，由Jimmy Wales创立\n2. 起源：Wikipedia起源于Wales旗下的Nupedia项目，该项目采用传统同行评审制度，进度缓慢\n3. Larry Sanger被聘为首任主编，负责制定编辑规则，于2002年离职\n4. Sanger提出了\"中立观点\"(Neutral Point of View)原则，成为Wikipedia的核心编辑准则\n5. 2001年后：Wikipedia迅速增长，成为全球最大百科全书\n\n创始人背景：\n- Jimmy Wales：Wikipedia联合创始人，Wikimedia Foundation主席，拥有金融学背景，2001年通过其互联网公司Bomis提供资金支持\n- Larry Sanger：首任主编，后对Wikipedia部分做法提出批评",
+    "metadata": {
+      "source": "Wikipedia history and founders documentation",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "088ca1fd-f406-47c7-9fde-fc72caf4b7f4",
+    "text": "# 维基百科使用方法和编辑教程\n\n维基百科使用方法入门教程：\n\n1. 注册账号：访问Wikipedia首页，点击\"创建账户\"完成注册\n2. 搜索词条：使用页面顶部的搜索框查找所需内容\n3. 阅读词条：词条页面包含标题、导言段、正文章节和参考资料\n4. 编辑词条：\n   - 点击页面顶部的\"编辑\"按钮进入编辑页面\n   - 可使用可视化编辑器（适合初学者）或源代码模式（支持更精细格式控制）\n   - 常见标记：添加链接（[[页面名]]）、插入标题（== 标题 ==）、创建列表\n5. 编辑规范：\n   - 遵循\"中立观点\"原则\n   - 引用可靠来源\n   - 编辑前可在沙盒中测试修改\n   - 讨论页可用于提出问题或建议\n6. 参与社区：加入讨论、创建新词条、参与编辑活动",
+    "metadata": {
+      "source": "Wikipedia help documentation and tutorials",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "3f841d01-6784-4948-b80a-04cdbefc117b",
+    "text": "# 维基百科统计数据 2024\n\nWikipedia关键统计数据（2024年）：\n- 英文维基百科：超过670万篇文章，注册用户超过4500万\n- 所有语言版本总计：超过6000万篇文章\n- 语言版本：支持超过300种语言，其中超过100种语言版本拥有超过10,000篇文章\n- 最大语言版本：英文、西班牙文、中文、德文、法文、俄文、日文\n- 活跃贡献者：每月约15万活跃贡献者\n- 全球访问量：超过40亿独立访客\n\n活跃编辑趋势：活跃编辑数量近年来呈现下降趋势，从2010年代的峰值逐渐减少。",
+    "metadata": {
+      "source": "Wikimedia Foundation Statistics 2024",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "fae8e89d-d375-45da-af3e-20bb07183008",
+    "text": "# 维基百科功能特点\n\n维基百科功能特点：\n\n1. Wiki协作技术：基于Wiki技术，支持多人协同编辑，所有用户都可以创建、修改内容\n2. 开源免费：采用GNU自由文档许可证（GFDL），内容自由分享\n3. 多语言支持：支持300多种语言版本\n4. 中立观点原则（NPOV）：所有内容应保持中立，不偏袒任何观点\n5. 同行评审机制：通过编辑历史追踪和社区监督保证内容质量\n6. 丰富的参考资料：每个词条都有相应的引用和来源\n7. 版本历史：完整的编辑记录，可回溯和比较\n8. 跨平台访问：可通过网页、移动应用等多种方式访问\n9. 非营利运营：由Wikimedia Foundation运营，接受捐赠支持",
+    "metadata": {
+      "source": "Wikipedia features and characteristics documentation",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "5468a467-7804-4ef2-b077-bd7849a6c6dc",
+    "text": "# Wikimedia Foundation维基媒体基金会\n\nWikimedia Foundation（维基媒体基金会）是一个非营利慈善组织，致力于鼓励免费多语言内容的增长、开发和传播，并向上述基于wiki的项目提供全部内容供公众免费使用。\n\n主要职责：\n- 托管13个免费知识项目\n- 支持创建和编辑内容的志愿者社区\n- 治理：由受托人委员会监督，成员由维基百科附属机构和项目社区选举产生\n\n旗下项目：Wikipedia、Wikimedia Commons、Wiktionary、Wikiversity、Wikidata、Wikiquote等13个项目。",
+    "metadata": {
+      "source": "Wikimedia Foundation official documentation",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "718b0973-661c-42ad-8607-c86e1e728918",
+    "text": "# Wiki的定义与核心概念\n\nWiki是一种基于互联网的协作式超文本系统，允许用户通过浏览器直接创建、编辑和修改网页内容，所有页面通常存放在同一个数据库中，支持多人协同编辑和版本控制。\"Wiki\"一词来源于夏威夷语\"wiki wiki\"，意为\"快速\"或\"快点\"。1995年Ward Cunningham选择这个名字，体现了该技术快速创建网页的核心理念。Wiki的核心特点是：开放编辑（基于\"善意假设\"原则）、版本控制、多人协作、快速迭代。技术架构基于\"编辑-保存\"模式，用户无需掌握HTML即可参与内容创建。",
+    "metadata": {
+      "source": "搜索结果综合",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "95e266d4-f86e-4d92-b9f4-c7cf70bb82eb",
+    "text": "# Wiki和Wikipedia的起源历史\n\nWard Cunningham（沃德·坎宁安）于1995年创建了第一个Wiki系统——波特兰模式知识库（Portland Pattern Repository），被公认为Wiki技术发明人。Wiki技术随后在2001年催生了Wikipedia项目。Wikipedia由Jimmy Wales和Larry Sanger于2001年1月15日创立，是一个基于Wikimedia Foundation运营的多语言免费在线百科全书。Jimmy Wales曾是互联网企业家，曾创立在线百科全书项目Nupedia，2001年他与Larry Sanger合作，在Nupedia基础上创建了Wikipedia。",
+    "metadata": {
+      "source": "搜索结果综合",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "8a37b790-a2a4-4671-891e-1bc8f6842166",
+    "text": "# Wiki技术工作原理与核心功能\n\nWiki引擎提供以下核心功能：1）内容管理与版本控制：追踪每次修改，支持回滚和历史记录查看；2）访问权限管理；3）页面链接与反向链接；4）全文搜索；5）讨论页面；6）富文本编辑；7）模板系统；8）扩展插件机制；9）多语言支持。现代Wiki引擎采用服务器端脚本语言（如PHP、Python、Ruby）开发，后端数据库存储内容，输出为HTML供浏览器显示。",
+    "metadata": {
+      "source": "搜索结果综合",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "c6bdc5f3-0739-4e66-bb7e-5d0b94e5295e",
+    "text": "# Wiki百科使用方法与编辑指南\n\nWikipedia使用方法与编辑指南：\n\n一、基本浏览与搜索\n- 使用搜索框输入关键词查找条目，支持模糊搜索和自动补全\n- 条目页面包含目录导航，可快速跳转各章节\n- 左侧边栏提供\"阅读\"、\"编辑\"、\"查看历史\"等功能链接\n\n二、账号注册与登录\n- 可匿名浏览和简单编辑，注册账号后享有更多权限\n- 注册过程免费\n\n三、词条编辑方法\n- 点击\"编辑\"使用可视化编辑器，或\"编辑源代码\"使用Wikitext\n- 使用[[条目名]]创建内部链接\n- 使用== 标题 ==创建章节标题\n- 使用*创建无序列表，#创建有序列表\n- 编辑前可点击\"显示预览\"检查效果\n- 编辑摘要栏应简要说明修改内容\n\n四、协作编辑机制\n- 每条目都有\"讨论页\"，用于编辑者之间沟通\n- 所有编辑都有历史记录，可查看版本差异\n- 登录用户可将条目加入监视列表，修改时收到通知\n\n五、最佳实践\n- 内容质量：引用可靠来源，使用中立观点，避免原创研究\n- 编辑礼仪：先讨论后修改，文明用语\n- 格式规范：遵循格式手册\n- 条目结构：倒金字塔结构，重要信息置前\n- 引用来源：所有内容需标注参考资料",
+    "metadata": {
+      "source": "搜索结果综合",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "4538482f-c363-4542-9ae3-2c093485b956",
+    "text": "# Wikidata维基数据简介\n\nWikidata是一个免费开放的知识库，可被人类和机器读取和编辑。它作为Wikimedia项目的结构化数据中心，为Wikipedia、Wiktionary、Wikibooks、Wikisource等姊妹项目提供支持。截至2025年，Wikidata拥有超过1.2亿个数据实体。Wikidata的数据采用免费许可证，可导出为标准格式，并能与其他开放数据集互联。",
+    "metadata": {
+      "source": "https://www.wikidata.org/wiki/Wikidata:Main_Page",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "bbe562c6-d00c-4f63-a7f8-04f423a5b436",
+    "text": "Wikipedia维基百科发展历史与创始人",
+    "metadata": {
+      "source": "Wikipedia官方历史页面及综合资料",
+      "title": "Wikipedia维基百科发展历史与创始人",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "f899f6b5-c8fa-4867-bca7-9d325f24d149",
+    "text": "Wikipedia（维基百科）发展历史\n### 创立背景\n- **2001年1月15日**，由吉米·威尔士（Jimmy Wales）和拉里·桑格（Larry Sanger）正式创立\n- 最初作为Nupedia（同行评审百科全书项目）的补充项目\n- 名称由\"wiki\"（夏威夷语，意为\"快速\"）+ \"encyclopedia\"（百科全书）组合而成\n\n### 关键里程碑\n| 年份 | 事件 |\n|------|------|\n| 1995 | Ward Cunningham发明Wiki技术，创建波特兰模式知识库 |\n| 2001.1.15 | Wikipedia正式上线 |\n| 2001年 | 上线仅一年，英文条目超过10万条 |\n| 2002.8 | 西班牙语维基百科成为第一个非英语版本 |\n| 2003 | Wikimedia Foundation正式成立 |\n| 2005 | 成为全球访问量最大的参考网站之一 |\n| 2024 | 拥有300+语言版本，6000万+文章 |\n\n### 创始人信息\n- **吉米·威尔士（Jimmy Wales）**：维基百科创始人，曾创立Nupedia，现任Wikimedia Foundation荣誉主席\n- **拉里·桑格（Larry Sanger）**：2001年提出使用wiki技术加速内容创建",
+    "metadata": {
+      "source": "Wikipedia官方历史页面及综合资料",
+      "title": "Wikipedia（维基百科）发展历史",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "48e3f85d-f0b6-4a7b-8f65-d18f86471e52",
+    "text": "Wikipedia维基百科使用方法与编辑指南",
+    "metadata": {
+      "source": "Wikipedia官方帮助页面及综合教程",
+      "title": "Wikipedia维基百科使用方法与编辑指南",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "3a36a6f6-0a24-4987-b973-ffde97cb180a",
+    "text": "Wiki百科使用方法与编辑指南\n### 一、基本浏览与搜索\n- 使用搜索框输入关键词查找条目，支持模糊搜索和自动补全\n- 条目页面包含目录导航，可快速跳转各章节\n- 左侧边栏提供\"阅读\"、\"编辑\"、\"查看历史\"等功能链接\n\n### 二、账号注册与登录\n- 可匿名浏览和简单编辑\n- 注册账号后享有：创建新词条、参与讨论、监视列表、上传文件等权限\n\n### 三、词条编辑方法\n1. 点击\"编辑\"使用可视化编辑器，或\"编辑源代码\"使用Wikitext\n2. 常用语法：\n   - 链接：`[[条目名]]`\n   - 标题：`== 标题 ==`\n   - 无序列表：`*`\n   - 有序列表：`#`\n   - 加粗：`'''文本'''`\n   - 斜体：`''文本''`\n3. 编辑后点击\"显示预览\"检查效果\n4. 填写编辑摘要说明修改内容\n5. 保存页面\n\n### 四、协作编辑机制\n- 每条目都有\"讨论页\"，用于编辑者之间沟通\n- 所有编辑都有历史记录，可查看版本差异\n- 登录用户可将条目加入监视列表，修改时收到通知\n\n### 五、编辑规范\n- **中立观点（NPOV）**：内容应保持中立，不偏袒任何观点\n- **可验证性**：所有内容需标注参考资料\n- **非原创研究**：不添加未经证实的研究内容",
+    "metadata": {
+      "source": "Wikipedia官方帮助页面及综合教程",
+      "title": "Wiki百科使用方法与编辑指南",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "e2760659-e891-4725-bbe0-847186cf557c",
+    "text": "Wiki百科核心功能特点详解",
+    "metadata": {
+      "source": "Wikipedia功能特点综合资料",
+      "title": "Wiki百科核心功能特点详解",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "4f73d893-1f68-4380-97ed-4a3718b09474",
+    "text": "Wiki百科功能特点总结\n### 一、协作编辑（核心功能）\n支持多人同时在线编辑同一文档内容，无需专业技术背景，通过简单标记语法即可参与内容创作。\n\n### 二、开放共创\n秉持开放共享理念，采用Creative Commons等开放许可证，任何人都可免费阅读、复制和传播内容。去中心化协作模式打破传统百科全书权威编辑的门槛。\n\n### 三、版本控制与透明性\n每次编辑都会生成独立版本记录，包含编辑时间、编辑者信息及修改摘要。可随时还原到任意历史状态，确保内容演进过程完全透明。\n\n### 四、中立观点原则（NPOV）\n所有内容应保持中立，不偏袒任何观点，这是维基百科的核心编辑原则之一。\n\n### 五、多语言支持\n支持300多种语言版本，成为真正的全球性知识共享平台。\n\n### 六、技术特点\n- Wiki标记语言（无需HTML知识）\n- \"编辑-保存\"简单模式\n- 基于\"善意假设\"原则\n- 非营利组织运营（Wikimedia Foundation）",
+    "metadata": {
+      "source": "Wikipedia功能特点综合资料",
+      "title": "Wiki百科功能特点总结",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "561401a4-1f90-40de-bd55-091a9861d3a3",
+    "text": "# 2024教育行业发展趋势报告\n\n2024教育行业发展趋势核心方向：\n1. **素质教育持续深化**：STEAM教育、编程教育、创客教育需求增长，综合素质评价体系逐步完善\n2. **数字化转型加速**：AI辅助教学、智慧课堂应用扩大，在线教育平台技术升级\n3. **职业教育受到重视**：产教融合、校企合作模式深化，技能型人才培养政策支持增强\n4. **AI+教育成为投资热点**：生成式AIrevolutionizes个性化学习，AI辅助学习可提升学生参与度达40%\n5. **自适应学习平台爆发**：通过机器学习实时分析学习模式，动态调整内容难度，Khan Academy、Duolingo等平台AI功能覆盖用户超3亿",
+    "metadata": {
+      "source": "HolonIQ, World Economic Forum Education Report 2024, EdTech Magazine",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "e69d28e6-0bdb-489c-9f0e-d1b9bb02a83d",
+    "text": "# 教育行业PPT模板设计规范\n\n教育行业PPT模板设计规范：\n- **视觉层级**：清晰的视觉层级、统一的配色方案（蓝色、绿色等温和色调）\n- **融入元素**：书本、铅笔、毕业帽等教育图标\n- **基础结构**：封面页、目录页、内容页、结尾页\n- **内容要求**：内容逻辑清晰、图文结合、每页信息量适中\n- **技术规格**：推荐16:9宽屏比例，分段式布局，避免大段文字\n- **工具平台**：Canva、Microsoft PowerPoint、Google Slides均提供教育行业专用模板，支持自定义编辑、团队协作和云端存储",
+    "metadata": {
+      "source": "Canva可画教育行业PPT模板指南, Microsoft Office官方模板库",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "399f9e90-c3f3-4f5c-b752-b232b5d34bc6",
+    "text": "# 教育科技企业Pitch Deck模板\n\n教育科技Pitch Deck标准结构（10-15页）：\n1. **封面**：公司名称、logo、口号（1页）\n2. **问题陈述**：用户痛点分析（1-2页）\n3. **解决方案**：产品/服务价值主张（1-2页）\n4. **市场规模**：TAM/SAM/SOM分析（1页）\n5. **商业模式**：收入来源、定价策略（1页）\n6. **竞争分析**：市场定位、差异化优势（1页）\n7. **团队介绍**：核心成员背景（1页）\n8. **融资需求**：融资轮次、金额、估值、资金使用计划（1页）\n\n关键要素：投资人关注问题-解决方案匹配度、市场规模、商业模式、团队能力、增长数据及单位经济效益\n代表案例：Byju's（印度220亿）、Coursera（43亿）、Quizlet（15亿）",
+    "metadata": {
+      "source": "Y Combinator, Sequoia Capital, StartupDonut, Slidebean",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "60c3bc1e-3ec7-4138-a737-a3efa65b02ec",
+    "text": "# 2024演示文稿设计最佳实践\n\n2024演示文稿设计最佳实践：\n1. **简洁至上**：每张幻灯片不超过6行文字，每行不超过6个词，重点信息通过视觉元素传达\n2. **高质量视觉素材**：使用高分辨率图片、图标和插画，避免低质量或拉伸失真的图片，推荐使用专业图库和统一图标风格（Flat Design或Isometric风格）\n3. **一致视觉风格**：配色方案、字体和布局风格统一，字体不超过2种（标题无衬线，正文衬线），确保对齐方式和间距统一\n4. **10-20-30法则**：不超过10页幻灯片、控制在20分钟内、使用30号以上字体\n5. **数据可视化**：通过数据支撑观点，用类比解释复杂概念，重复关键信息强化记忆\n6. **2024设计趋势**：极简主义与创意视觉融合，动态渐变背景、3D元素、AI辅助设计、沉浸式交互设计成为主流",
+    "metadata": {
+      "source": "Slidebean Presentation Industry Report 2024, PowerEffect Business Presentation Trends 2024",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "64eacdd4-9c20-42b1-9083-af4972dd0a5b",
+    "text": "# 企业Wiki系统选型对比2024\n\n企业Wiki系统主流产品对比总结：\n\n1. Confluence (Atlassian)\n- 定位：企业级AI知识协作平台\n- 优点：强大的内容组织、搜索和权限管理；与Jira等开发工具深度集成；AI功能(Rovo)；适合大型企业\n- 缺点：成本较高，近年来价格上涨\n- 定价：按用户收费，企业版功能丰富\n\n2. Notion\n- 定位：灵活模块化的AI工作空间\n- 优点：灵活的模块化设计；连续3年G2知识库评分第一；支持AI agents；适合中小团队\n- 缺点：作为Wiki使用时层级深度有限；权限管理相对基础\n- 定价：$10/user起（Team Wiki功能）\n\n3. 飞书文档/知识库\n- 定位：字节跳动企业协作工具\n- 优点：本土化体验好；支持多维表格和双向链接；与飞书生态深度整合\n- 缺点：主要面向国内企业\n\n4. 钉钉文档/知识库\n- 定位：阿里巴巴企业协作平台\n- 优点：知识库与即时通讯联动；支持AI智能助手；部署灵活（公有云/私有化）\n- 缺点：需要已有钉钉使用习惯\n\n5. 开源方案 (MediaWiki, DokuWiki, ShowDoc等)\n- 优点：免费开源；可自定义；适合技术团队\n- 缺点：配置复杂；维护成本高；默认界面简陋\n\n选型建议：\n- 大型企业/复杂协作：Confluence\n- 中小企业/灵活团队：Notion\n- 国内企业/本土化需求：飞书/钉钉\n- 低预算/技术团队：开源方案",
+    "metadata": {
+      "source": "web_search_enterprise_wiki",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "1a8b41d7-b138-4764-90ce-95ceb07191e9",
+    "text": "# MediaWiki开源Wiki系统\n\nMediaWiki是维基百科所使用的开源Wiki引擎：\n- 高度可扩展性和强大的版本控制功能\n- 支持多语言、模板系统和丰富的插件生态\n- 配置复杂，对新手不友好\n- 默认界面较为简陋\n- 被全球数万个网站和数千家企业使用\n- 免费开源，可自定义扩展",
+    "metadata": {
+      "source": "https://www.mediawiki.org/wiki/MediaWiki",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "9b73b7fd-0a52-42e2-ad52-32251315bd7f",
+    "text": "# Wiki的定义与起源\n\nWiki是一种在网络上开放且被多人协同编辑的超文本系统，由Ward Cunningham于1995年创建。\"Wiki\"一词源于夏威夷语的\"wee kee wee kee\"，意为\"快点快点\"。核心特点是支持协作式编辑，允许用户直接在网页上修改、添加或删除内容，所有访问者都可以参与建设。",
+    "metadata": {
+      "source": "Wikipedia/技术社区综合",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "e6be1660-a0ad-47e2-a799-ab20b95b20bc",
+    "text": "# 四大主流Wiki系统对比\n\n**MediaWiki**：维基百科使用的开源系统，PHP+MySQL，技术团队适用但配置复杂\n**DokuWiki**：轻量级，纯文本存储无需数据库，迁移简单、安全性高，适合中小团队\n**Confluence**：企业级知识管理，与Jira深度集成，月费约$5.75/用户起，适合企业协作\n**Notion**：云端协作工具，界面现代化，个人免费/团队$8/用户，更灵活但企业级功能较弱\n\n总结：技术文档首选MediaWiki或DokuWiki，企业协作首选Confluence或Notion",
+    "metadata": {
+      "source": "CSDN/技术社区综合评测",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "d12ff408-f56c-49fc-8cd7-25908c647ddb",
+    "text": "# Wiki在企业知识管理中的应用场景\n\n1. 团队文档协作与版本管理\n2. 项目知识沉淀与共享\n3. 新员工培训资料库建设\n4. 企业流程规范的在线维护\n5. 打破信息孤岛、实现跨部门知识关联\n6. 支持页面间的双向链接、知识图谱构建\n\n相较于传统文件夹式文档管理，Wiki优势在于：打破信息孤岛、跨部门知识关联、双向链接、知识图谱构建。但也存在学习曲线较陡、权限控制相对复杂等挑战。",
+    "metadata": {
+      "source": "综合技术应用分析报告",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "f3ff15ae-49d0-4020-b87a-c0c9e2991b37",
+    "text": "# MediaWiki官方介绍\n\nMediaWiki is a collaboration and documentation platform that powers Wikipedia. It is:\n- Powerful, multilingual, free and open source\n- Extensible through extensions\n- Customisable and reliable\n- Used by tens of thousands of websites and thousands of companies\n\nKey features: Documentation, community collaboration, multilingual support, extension ecosystem",
+    "metadata": {
+      "source": "https://www.mediawiki.org/wiki/MediaWiki",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "7d6bd44e-469b-4b2f-9288-4c33605bf400",
+    "text": "# Confluence企业知识管理平台\n\nConfluence定位：AI workspace for knowledge and collaboration（企业知识协作AI工作空间）\n\n核心功能：\n- AI creation: 使用AI生成PRD、社交简报、年度计划等模板\n- Rovo AI: 跨应用搜索、AI agents处理工作\n- Team workspaces: 团队空间和AI搜索\n- Live docs, Whiteboards, Databases, Pages, Videos, Slides等多元内容类型\n- Teamwork Graph: 连接团队、工作和目标\n- 与Jira、Slack等企业工具深度集成\n\n优势：比SharePoint更易用，比Google Docs更一致易导航",
+    "metadata": {
+      "source": "https://www.atlassian.com/confluence",
+      "chunkIndex": 0
+    }
+  }
+]

@@ -1,0 +1,505 @@
+[
+  {
+    "id": "b97a98d9-4b1b-4e57-8df2-b7ac5ec296c0",
+    "text": "你是一个专业的幻灯片代码生成工程师，专注于生成功能丰富、视觉效果出色的 reveal.js HTML。",
+    "metadata": {
+      "source": "code-generator-prompt.md",
+      "title": "你是一个专业的幻灯片代码生成工程师，专注于生成功能丰富、视觉效果出色的 reveal.js HTML。",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "618d3cb0-c73c-4303-9f52-85b8e003ec22",
+    "text": "核心原则\n你必须严格参考【reveal.js Skill 知识库】中的模板和示例。\nreveal.js Skill 里有完整的 HTML 模板、fragment 变体、auto-animate 精细控制、背景配置、CDN 链接。\n**生成代码时，你必须从 Skill 模板改编，而非从头编写。**",
+    "metadata": {
+      "source": "code-generator-prompt.md",
+      "title": "核心原则",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "0a64775e-28ca-4415-89cd-63eed51e448b",
+    "text": "技术规范\n- reveal.js 5.x CDN：https://cdn.jsdelivr.net/npm/reveal.js@5\n- 完整 CSS 变量系统（配色/字体/间距）\n- 响应式 1280×720（16:9）\n- 严格内容边界：不超出一屏\n- 所有 CDN 资源必须使用完整 URL（jsdelivr）",
+    "metadata": {
+      "source": "code-generator-prompt.md",
+      "title": "技术规范",
+      "sectionIndex": 2
+    }
+  },
+  {
+    "id": "f7b2b35b-d000-491d-9fdf-71db9dd15552",
+    "text": "【强制要求】必须从 Skill 模板改编以下特性\n1. 【空间矩阵/嵌套】—— 必须使用 2D 导航结构\n   从 Skill 模板的\"空间矩阵\"章节复制结构，外层 section 横向、子 section 纵向\n\n2. 【fragments】—— 每页至少 3 个 fragment，且必须使用变体\n   **必须从 Skill 的 fragment 变体列表中选择使用**，不要只用 class=\"fragment\"\n   推荐：grow / shrink / fade-right / fade-up / highlight-red / highlight-blue\n   绝对不要所有 fragment 都用同一个类\n\n3. 【auto-animate】—— 必须包含 easing / delay / id+restart\n   从 Skill 模板复制\"精细控制\"示例，包括 data-auto-animate-easing / data-auto-animate-delay\n\n4. 【代码高亮】—— 必须有 data-line-numbers，高亮指定行\n   从 Skill 复制 data-line-numbers=\"3|7-9|12\" 格式\n\n5. 【背景】—— 必须使用 background-transition\n   从 Skill 复制 data-background-transition=\"zoom\" 等用法\n\n6. 【data-state 事件】—— 至少一页绑定 JavaScript 事件\n   从 Skill 复制 Reveal.on('customevent', ...) 用法\n\n7. 【fit-text】—— 标题文字使用 class=\"r-fit-text\"\n\n8. 【iframe 背景】—— 使用 data-background-interactive\n\n9. 【页面过渡动画】—— 每页必须指定 data-transition\n\n10. 【演讲者备注】—— 每页必须有 <aside class=\"notes\">\n\n11. 【CDN 完整链接】—— 所有资源必须用完整 jsdelivr URL（见 Skill 底部）",
+    "metadata": {
+      "source": "code-generator-prompt.md",
+      "title": "【强制要求】必须从 Skill 模板改编以下特性",
+      "sectionIndex": 3
+    }
+  },
+  {
+    "id": "c82dd687-6441-4239-90fd-a30792125406",
+    "text": "输出规范\n- 只输出完整 HTML（不截断、不省略、不用 markdown code block 包裹）\n- 不使用内联复杂样式（全部用 CSS class）\n- 注释关键区块方便后续修改\n- 生成的 HTML 直接是最终可用的 presentation",
+    "metadata": {
+      "source": "code-generator-prompt.md",
+      "title": "输出规范",
+      "sectionIndex": 4
+    }
+  },
+  {
+    "id": "9d8abffb-8c7c-4f5b-b058-24e787019e5a",
+    "text": "code-generator Wiki",
+    "metadata": {
+      "source": "code-generator.md",
+      "title": "code-generator Wiki",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "d23afc13-5039-4ebe-b95e-0588bd866207",
+    "text": "HTML 生成模式库\n### 完整 HTML 模板\n```html\n<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>演示标题</title>\n  <!-- Reveal.js -->\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css\">\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css\">\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css\">\n  <!-- Google Fonts -->\n  <link href=\"https://fonts.googleapis.com/css2?family=标题字体&family=正文字体&display=swap\" rel=\"stylesheet\">\n  <!-- 插件 CSS -->\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css\">\n  <style>\n    :root {\n      --primary: #2563EB;\n      --secondary: #1E40AF;\n      --background: #0F172A;\n      --text: #F1F5F9;\n      --accent: #38BDF8;\n      --heading-font: '标题字体', sans-serif;\n      --body-font: '正文字体', sans-serif;\n    }\n    .reveal { font-family: var(--body-font); }\n    .reveal h1, .reveal h2, .reveal h3 { font-family: var(--heading-font); }\n    .reveal-viewport { background: var(--background); }\n    .reveal .slides section {\n      height: 100%;\n      display: flex !important;\n      flex-direction: column !important;\n      padding: 60px !important;\n      box-sizing: border-box;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"reveal\">\n    <div class=\"slides\">\n      <!-- 幻灯片内容 -->\n    </div>\n  </div>",
+    "metadata": {
+      "source": "code-generator.md",
+      "title": "HTML 生成模式库 (part 1)",
+      "sectionIndex": 1,
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "c62f688c-4e48-4589-875b-cf6188d8278d",
+    "text": "HTML 生成模式库\n  <script src=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js\"></script>\n  <script src=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js\"></script>\n  <script src=\"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js\"></script>\n  <script>\n    Reveal.initialize({\n      width: 1280, height: 720, margin: 0.04,\n      controls: true, progress: true, hash: true,\n      transition: 'none',\n      plugins: [RevealHighlight, RevealNotes]\n    });\n  </script>\n</body>\n</html>\n```\n### 常见布局模式\n**单栏文字布局**\n```html\n<section>\n  <h2>标题</h2>\n  <div class=\"content\" style=\"flex:1;display:flex;align-items:center;justify-content:center;\">\n    <p style=\"font-size:24pt;text-align:center;max-width:900px;\">正文内容</p>\n  </div>\n</section>\n```\n**双栏对比布局**\n```html\n<section>\n  <h2>对比</h2>\n  <div style=\"display:flex;gap:40px;flex:1;\">\n    <div style=\"flex:1;\">左侧内容</div>\n    <div style=\"flex:1;\">右侧内容</div>\n  </div>\n</section>\n```\n**卡片网格布局**\n```html\n<section>\n  <h2>功能特点</h2>\n  <div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;\">\n    <div class=\"card\">卡片1</div>\n    <div class=\"card\">卡片2</div>\n    <div class=\"card\">卡片3</div>\n  </div>\n</section>\n```\n### 防溢出规则\n1. 每页最多：6 行文字 OR 3-4 张卡片 OR 1 图 + 3 行文字\n2. 字号下限：14pt（正文），10pt（注释）\n3. 图片最大高度：360px\n4. 使用 overflow:hidden 保护容器\n### 响应式策略\nreveal.js 固定 1280×720 视口，前端 iframe 自适应缩放。生成时严格遵循此尺寸，内容不得超出。",
+    "metadata": {
+      "source": "code-generator.md",
+      "title": "HTML 生成模式库 (part 2)",
+      "sectionIndex": 1,
+      "chunkIndex": 1
+    }
+  },
+  {
+    "id": "f52e77a8-c99b-4a77-b0ec-72c14dbc8f92",
+    "text": "你是一个 reveal.js 演示文稿质量评估专家。你的任务是评价生成的 HTML 是否满足用户需求。\n\n评估维度：\n1. 内容完整性（30%）：是否覆盖了需求中的关键主题\n2. 结构合理性（25%）：幻灯片顺序是否逻辑清晰、叙事流畅\n3. 视觉质量（20%）：配色和排版是否专业、一致\n4. 技术正确性（15%）：reveal.js 代码是否正确、无语法问题\n5. 可用性（10%）：是否需要修改才能直接使用\n\n输出格式（JSON）：\n{\n  \"score\": 0.0-1.0,\n  \"contentScore\": 0.0-1.0,\n  \"structureScore\": 0.0-1.0,\n  \"visualScore\": 0.0-1.0,\n  \"techScore\": 0.0-1.0,\n  \"usabilityScore\": 0.0-1.0,\n  \"passed\": true或false,\n  \"feedback\": \"总体评价（50字内）\",\n  \"issues\": [\"问题1\", \"问题2\"],\n  \"strengths\": [\"优点1\", \"优点2\"]\n}\n\n评分标准：\n- score >= 0.8: 优秀，无需修改\n- score 0.6-0.8: 良好，可小幅优化\n- score 0.4-0.6: 一般，需要修改\n- score < 0.4: 差，需要重新生成\n\n如果 passed 为 false，需要列出具体的 issues。",
+    "metadata": {
+      "source": "evaluator-prompt.md",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "6ac6cc39-65cd-49cd-bcad-40943490b55a",
+    "text": "你是一个高效的信息收集专家，擅长从多来源收集整理资料。\n\n工作方式：\n1. 文件内容提炼：从上传的文档/图片中提取关键信息\n2. 搜索整合：利用搜索能力获取相关背景资料\n3. 结构化整理：按主题分类，标注来源可信度\n\n质量标准：\n- 提炼精华而非堆砌原文\n- 标注信息来源\n- 区分\"已确认事实\"和\"推断\"",
+    "metadata": {
+      "source": "info-collector-prompt.md",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "7b562fa9-45d6-457a-b9b8-b21b3da2350b",
+    "text": "你是一个知识编译专家。你的任务是将碎片化的网络搜索结果消化理解后，\n编译成结构化、可永久复用的 Wiki 知识文档。\n\n编译原则：\n1. 去重合并：多个来源的相同信息合并为一个要点\n2. 提炼精华：去除冗余描述，保留核心信息和关键数据\n3. 结构化分层：使用 Markdown 标题层级组织内容\n4. 标注来源：在关键信息后标注原始 URL\n5. 补全逻辑：如果多个碎片之间存在逻辑关联，整合成完整的知识链\n\n输出格式：\n# 主题名称",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "你是一个知识编译专家。你的任务是将碎片化的网络搜索结果消化理解后，",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "8ef9c2ee-b55b-47f0-8b74-852869a389f8",
+    "text": "概述\n一段简洁的概述（2-3 句话）",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "概述",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "4365aa3a-95fc-42f8-bb9c-60befe8204f5",
+    "text": "核心概念\n- 概念1：定义和解释 [来源: url]\n- 概念2：定义和解释 [来源: url]",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "核心概念",
+      "sectionIndex": 2
+    }
+  },
+  {
+    "id": "81bef6cc-f104-4ea4-b5e4-6a9d713d2a29",
+    "text": "关键技术/方法\n- 技术点1：描述 [来源: url]\n- 技术点2：描述 [来源: url]",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "关键技术/方法",
+      "sectionIndex": 3
+    }
+  },
+  {
+    "id": "09755221-6d7b-49a5-8c03-8ec28b6a621c",
+    "text": "最新进展\n- 进展1：时间 + 内容 [来源: url]\n- 进展2：时间 + 内容 [来源: url]",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "最新进展",
+      "sectionIndex": 4
+    }
+  },
+  {
+    "id": "193f04f2-8be2-42c3-aec7-62225857bca8",
+    "text": "常见误区\n- 误区1：错误认知 → 正确认知\n- 误区2：错误认知 → 正确认知",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "常见误区",
+      "sectionIndex": 5
+    }
+  },
+  {
+    "id": "755fea2f-712e-4585-9e0c-8adfbea85e31",
+    "text": "关键数据/统计\n- 数据1：数值 + 含义 + 时间 [来源: url]\n- 数据2：数值 + 含义 + 时间 [来源: url]",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "关键数据/统计",
+      "sectionIndex": 6
+    }
+  },
+  {
+    "id": "015b01e7-3647-4a35-ab92-88269f8f5eb0",
+    "text": "推荐资源\n- [标题](url)：简短描述\n\n质量标准：\n- 不要重复冗余信息\n- 每条要点控制在 2-3 行\n- 总共不超过 80 行\n- 确保所有 [来源] 标注准确对应",
+    "metadata": {
+      "source": "knowledge-compiler-prompt.md",
+      "title": "推荐资源",
+      "sectionIndex": 7
+    }
+  },
+  {
+    "id": "53aa52f0-0b7d-4fc3-b857-1e314d87d646",
+    "text": "你是一个专业的需求分析师，擅长理解用户想要什么样的演示文稿。\n\n分析维度：\n1. 演示目的（教学/路演/技术分享/个人展示）\n2. 目标受众（技术背景/管理层/投资人/大众）\n3. 内容类型（数据驱动/概念解释/历程讲述/对比分析）\n4. 风格偏好（奢华/简约/活力/学术）\n5. 特殊元素（代码/数学公式/图表/视频）\n\n输出要求：\n- 信息收集清单：需要用户提供什么素材\n- 设计方向判定：从预设风格库中选择最匹配的\n- 置信度评估：对需求清晰度打分，明确需求模糊的地方",
+    "metadata": {
+      "source": "requirement-analyzer-prompt.md",
+      "chunkIndex": 0
+    }
+  },
+  {
+    "id": "06f5b5ce-ab30-41ba-b29c-3ebcddc85376",
+    "text": "requirement-analyzer Wiki",
+    "metadata": {
+      "source": "requirement-analyzer.md",
+      "title": "requirement-analyzer Wiki",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "03f98a31-96e0-43c1-9bad-6186e41b6e8e",
+    "text": "需求分析模式库\n### 典型需求类型\n\n**技术分享型**\n- 受众：技术人员\n- 风格：Technical blueprint / Academic minimalism\n- 色调：冷色调（蓝/灰/青），克制\n- 情绪：专业、权威\n\n**商业路演型**\n- 受众：投资人/管理层\n- 风格：Luxury report / Editorial\n- 色调：深色系（深蓝/金/白），高端感\n- 情绪：自信、有说服力\n\n**教学培训型**\n- 受众：学员/内部团队\n- 风格：Playful explainer / Swiss modernism\n- 色调：温暖（橙/绿），友好\n- 情绪：轻松、鼓励\n\n**学术报告型**\n- 受众：学术同行/导师\n- 风格：Academic minimalism\n- 色调：纯色/单色，严谨\n- 情绪：客观、精确\n\n### 信息收集清单模板\n\n1. 主题核心内容（是什么？）\n2. 目标受众背景（给谁看？）\n3. 关键数据/案例（有哪些证据？）\n4. 参考资料/链接（有哪些现成素材？）\n5. 演示时长要求（多久？）\n6. 特殊要求（数学公式？代码？图表？）",
+    "metadata": {
+      "source": "requirement-analyzer.md",
+      "title": "需求分析模式库",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "5812d622-8e96-4cd8-8ec3-53a70cf528a5",
+    "text": "reveal.js Skill 知识库",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "reveal.js Skill 知识库",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "5585dbb4-543d-4cda-95ae-33dd2e54ddec",
+    "text": "完整模板\n```html\n<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>演示文稿</title>\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css\">\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css\">\n  <!-- 可选：highlight.js 代码高亮 -->\n  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css\">\n</head>\n<body>\n  <div class=\"reveal\">\n    <div class=\"slides\">\n\n      <!-- 单页 -->\n      <section data-transition=\"fade\">\n        <h2>标题</h2>\n        <p>内容</p>\n        <aside class=\"notes\">演讲者备注</aside>\n      </section>\n\n    </div>\n  </div>\n\n  <script src=\"https://cdn.jsdelivr.net/npm/reveal.js@5\"></script>\n  <script src=\"https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.js\"></script>\n  <script>\n    Reveal.initialize({\n      hash: true,\n      controls: true,\n      progress: true,\n      center: true,\n      transition: 'fade',\n      plugins: [RevealHighlight, RevealNotes, RevealMarkdown, RevealKaTeX]\n    });\n    // 监听状态事件\n    Reveal.on('customevent', () => console.log('customevent triggered'));\n  </script>\n</body>\n</html>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "完整模板",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "d25e9106-9bb2-4766-969f-f841b4d2ca36",
+    "text": "空间矩阵（2D 嵌套幻灯片）\n横向章节（左右切）+ 纵向子页（上下切）：\n\n```html\n<section>                              <!-- 横向：章节1 -->\n  <section>章节1标题页</section>          <!-- 纵：子页入口 -->\n  <section><h3>子页A</h3><p>内容</p></section>\n  <section><h3>子页B</h3><p>内容</p></section>\n</section>\n<section>                              <!-- 横向：章节2 -->\n  <section>章节2标题页</section>\n  <section><h3>子页C</h3><p>内容</p></section>\n</section>\n```\n\n导航：左右键横向、上下键纵向、ESC总览、F全屏、S演讲者模式。",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "空间矩阵（2D 嵌套幻灯片）",
+      "sectionIndex": 2
+    }
+  },
+  {
+    "id": "c2f98aae-5904-403f-9ded-6f6529534e89",
+    "text": "自动动画（Auto-Animate）\n相邻 `<section data-auto-animate>` 通过 data-id 匹配元素，自动补间。\n\n### 基础用法\n\n```html\n<section data-auto-animate>\n  <h2 data-id=\"title\">初始</h2>\n</section>\n<section data-auto-animate>\n  <h2 data-id=\"title\">变化</h2>\n</section>\n```\n\n### 精细控制\n\n```html\n<!-- 整页级别 -->\n<section data-auto-animate\n        data-auto-animate-easing=\"cubic-bezier(0.770, 0.000, 0.175, 1.000)\"\n        data-auto-animate-duration=\"0.8\"\n        data-auto-animate-unmatched=\"false\">\n\n  <!-- 元素级别延迟 -->\n  <div data-id=\"box1\" data-auto-animate-delay=\"0\">先来</div>\n  <div data-id=\"box2\" data-auto-animate-delay=\"0.3\">后来</div>\n  <div data-id=\"box3\" data-auto-animate-delay=\"0.6\">最后</div>\n</section>\n```\n\n### id + restart（分隔两组动画）\n\n```html\n<section data-auto-animate data-auto-animate-id=\"group-a\">…</section>\n<section data-auto-animate data-auto-animate-id=\"group-a\">…</section>\n<section data-auto-animate data-auto-animate-id=\"group-a\" data-auto-animate-restart>…</section>\n<section data-auto-animate data-auto-animate-id=\"group-a\">…</section>\n<!-- 第一组结束后，restart 分隔，第二组重新开始 -->\n```\n\neasing 可选：`ease`（默认）、`linear`、`ease-in`、`ease-out`、`ease-in-out`、``cubic-bezier(0.770, 0.000, 0.175, 1.000)`（弹性）",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "自动动画（Auto-Animate）",
+      "sectionIndex": 3
+    }
+  },
+  {
+    "id": "ba8f7d62-7a5e-483a-8203-af231e12e8d8",
+    "text": "碎片化（Fragments）\n### 标准用法（每页至少3个）\n\n```html\n<section>\n  <p class=\"fragment\">第一步</p>\n  <p class=\"fragment\">第二步</p>\n  <p class=\"fragment\">第三步</p>\n</section>\n```\n\n### Fragment 变体（全部可用）\n\n```html\n<p class=\"fragment grow\">放大渐入</p>\n<p class=\"fragment shrink\">缩小渐入</p>\n<p class=\"fragment fade-out\">渐出</p>\n<p class=\"fragment fade-right\">向右渐入</p>\n<p class=\"fragment fade-up\">向上渐入</p>\n<p class=\"fragment fade-down\">向下渐入</p>\n<p class=\"fragment fade-left\">向左渐入</p>\n<p class=\"fragment fade-in-then-out\">先入后出</p>\n<p class=\"fragment fade-in-then-semi-out\">先入后半透明</p>\n<p class=\"fragment highlight-red\">高亮红</p>\n<p class=\"fragment highlight-blue\">高亮蓝</p>\n<p class=\"fragment highlight-green\">高亮绿</p>\n<p class=\"fragment highlight-current-red\">当前红高亮</p>\n<p class=\"fragment highlight-current-blue\">当前蓝高亮</p>\n<p class=\"fragment strike\">删除线</p>\n<p class=\"fragment semi-visible\">半透明</p>\n```\n\n### Fragment 索引（控制顺序）\n\n```html\n<span class=\"fragment\" data-fragment-index=\"3\">最后出现</span>\n<span class=\"fragment\" data-fragment-index=\"1\">第二出现</span>\n<span class=\"fragment\" data-fragment-index=\"2\">第三出现</span>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "碎片化（Fragments）",
+      "sectionIndex": 4
+    }
+  },
+  {
+    "id": "77e398cf-46a9-40ed-8971-40d87c580cfe",
+    "text": "代码高亮\n```html\n<pre><code data-line-numbers=\"3|7-9|12\">const x = 1;\nfunction foo() {\n  return x;        // 高亮行3\n}\nfunction bar() {   // 高亮7-9\n  return foo();\n}                  // 高亮12\nconst y = 2;</code></pre>\n```\n\n可选 CDN：highlight.js@11 monokai.css（见模板）。",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "代码高亮",
+      "sectionIndex": 5
+    }
+  },
+  {
+    "id": "8998b20f-7d9f-43ac-8eb5-7e7b9c03d456",
+    "text": "数学公式（KaTeX）\n```html\n<!-- 必须加载插件 -->\n<script src=\"https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/math/katex.js\"></script>\n\n<section data-transition=\"fade\">\n  <p>行内公式：$E = mc^2$</p>\n  <p>块级公式：$$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$</p>\n</section>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "数学公式（KaTeX）",
+      "sectionIndex": 6
+    }
+  },
+  {
+    "id": "533037c9-fc68-4cb7-8830-9f39b16fceab",
+    "text": "背景\n### 颜色背景\n\n```html\n<section data-background-color=\"aquamarine\">\n  <p>纯色背景</p>\n</section>\n```\n\n### 图片背景\n\n```html\n<section data-background-image=\"https://example.com/image.png\"\n         data-background-size=\"cover\"\n         data-background-repeat=\"no-repeat\">\n</section>\n\n<!-- 重复平铺 -->\n<section data-background-image=\"pattern.png\"\n         data-background-repeat=\"repeat\"\n         data-background-size=\"100px\">\n</section>\n```\n\n### 视频/GIF背景\n\n```html\n<section data-background-video=\"video.mp4,video.webm\"\n         data-background-color=\"#000000\"\n         data-background-loop>\n</section>\n\n<!-- GIF 直接用图片URL -->\n<section data-background=\"http://i.giphy.com/90F8aUepslB84.gif\">\n</section>\n```\n\n### iframe背景（可交互）\n\n```html\n<section data-background-iframe=\"https://hakim.se\"\n         data-background-interactive>\n  <!-- overlay 内容浮在上面 -->\n  <div style=\"position:absolute; left:0; bottom:0; background:white; padding:10px;\">\n    iframe 上方的文字\n  </div>\n</section>\n```\n\n### 背景切换动画\n\n```html\n<section data-transition=\"slide\"\n        data-background=\"#4d7e65\"\n        data-background-transition=\"zoom\">\n  <!-- 本页 slide 切换，背景 zoom 动画 -->\n</section>\n```\n\ndata-background-transition 可选：`none` / `fade` / `slide` / `convex` / `concave` / `zoom`",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "背景",
+      "sectionIndex": 7
+    }
+  },
+  {
+    "id": "c97a65bf-5f4a-439c-b51d-de0c423b323d",
+    "text": "过渡动画（transition）\n```html\n<section data-transition=\"fade\">fade</section>\n<section data-transition=\"slide\">slide（默认）</section>\n<section data-transition=\"convex\">convex</section>\n<section data-transition=\"concave\">concave</section>\n<section data-transition=\"zoom\">zoom</section>\n<section data-transition=\"none\">无动画</section>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "过渡动画（transition）",
+      "sectionIndex": 8
+    }
+  },
+  {
+    "id": "13a5222d-eeca-49b3-a1ab-74ed9472b092",
+    "text": "状态事件（data-state）\n```html\n<section data-state=\"intro\">\n  <h2>介绍</h2>\n</section>\n<section data-state=\"detail\">\n  <h2>详情</h2>\n</section>\n<section data-state=\"customevent\">\n  <h2>自定义事件</h2>\n</section>\n```\n\nJavaScript 监听：\n\n```javascript\nReveal.on('intro', () => console.log('进入 intro 状态'));\nReveal.on('detail', () => console.log('进入 detail 状态'));\n\n// 任意 data-state 值都会触发对应事件\nReveal.on('customevent', () => {\n  document.body.style.background = '#333';\n});\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "状态事件（data-state）",
+      "sectionIndex": 9
+    }
+  },
+  {
+    "id": "4cee9e81-8d3c-4e55-9285-4da807b69f40",
+    "text": "自动大小文字（fit-text）\n```html\n<section>\n  <h2 class=\"r-fit-text\">自动适应文字</h2>\n</section>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "自动大小文字（fit-text）",
+      "sectionIndex": 10
+    }
+  },
+  {
+    "id": "da7a5b59-21c0-4062-952d-bc2b70d18d23",
+    "text": "Markdown 支持\n```html\n<section data-markdown>\n  <script type=\"text/template\">\n    ## 标题\n\n    - 列表项1\n    - 列表项2\n\n    ```javascript\n    const x = 1;\n    ```\n  </script>\n</section>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "Markdown 支持",
+      "sectionIndex": 11
+    }
+  },
+  {
+    "id": "a2fb7256-9f0b-4d5e-a23f-55030357ef4a",
+    "text": "内部链接\n```html\n<a href=\"#/2/3\">跳到第3章节的第4页</a>\n<a href=\"#/3\">跳到第4页</a>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "内部链接",
+      "sectionIndex": 12
+    }
+  },
+  {
+    "id": "abeff678-771c-4650-9f75-588d382e79d4",
+    "text": "布局辅助类\n```html\n<div class=\"r-hstack justify-center align-center\">水平堆叠居中</div>\n<div class=\"r-vstack justify-center align-center\">垂直堆叠居中</div>\n<div class=\"r-stack\">堆叠（重叠）</div>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "布局辅助类",
+      "sectionIndex": 13
+    }
+  },
+  {
+    "id": "a3665e65-2488-410d-8470-4b03e54227b2",
+    "text": "演讲者备注\n```html\n<section>\n  <h2>标题</h2>\n  <p>内容</p>\n  <aside class=\"notes\">\n    这是演讲者备注，只在演讲者模式可见。\n    按 S 键打开演讲者视图。\n  </aside>\n</section>\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "演讲者备注",
+      "sectionIndex": 14
+    }
+  },
+  {
+    "id": "700ac6ac-b498-4e96-84ff-acaf77e1cd78",
+    "text": "键盘快捷键\n- 左右箭头：横向翻页\n- 上下箭头：纵向翻页\n- Space/Enter：下一项（fragment/动画）\n- ESC：总览模式\n- O：总览模式\n- F：全屏\n- S：演讲者模式\n- B/. ：暂停（屏幕黑屏）\n- Alt+click：zoom-js 放大点击的元素",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "键盘快捷键",
+      "sectionIndex": 15
+    }
+  },
+  {
+    "id": "79184c35-fb1f-442b-9cda-5f14b003ae06",
+    "text": "配置选项\n```javascript\nReveal.initialize({\n  width: 1280,           // 幻灯片宽度\n  height: 720,           // 幻灯片高度\n  margin: 0.04,         // 内容边距\n  controls: true,        // 显示导航箭头\n  progress: true,        // 显示进度条\n  center: true,          // 内容居中\n  hash: true,            // URL 含幻灯片索引\n  transition: 'fade',    // 默认过渡动画\n  transitionSpeed: 'default', // 'default'/'fast'/'slow'\n  backgroundTransition: 'fade', // 背景过渡\n  autoSlide: 0,          // 自动播放（毫秒），0=关闭\n  autoSlideStoppable: true,\n  loop: false,           // 循环播放\n  rtl: false,            // 从右到左\n  shuffle: false,        // 随机顺序\n  fragments: true,        // 启用 fragment\n  embedded: false,        // 嵌入式模式\n  help: true,            // 显示帮助\n  showNotes: false,      // 同时显示备注\n  showSlideNumber: 'all', // 'all'/'print'/'none'\n  scrollable: true,      // 可滚动内容\n  hideInactiveCursor: true,\n  hideCursorTime: 3000,\n  plugins: []             // 插件列表\n});\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "配置选项",
+      "sectionIndex": 16
+    }
+  },
+  {
+    "id": "7d888d42-f29e-47c7-ae6a-6aa27074cee9",
+    "text": "常用 CDN 资源\n```\nreveal.css:    https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css\nreveal.js:     https://cdn.jsdelivr.net/npm/reveal.js@5\nhighlight.js:  https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.js\nmonokai.css:   https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css\nkatex.js:      https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/math/katex.js\nkatex.css:     https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css\nkatex.js:      https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js\nchart.js:      https://cdn.jsdelivr.net/npm/chart.js\nfont:          https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700\n```",
+    "metadata": {
+      "source": "reveal.js.md",
+      "title": "常用 CDN 资源",
+      "sectionIndex": 17
+    }
+  },
+  {
+    "id": "5f73b8b0-43f2-4c74-951e-0d7486120226",
+    "text": "你是一个结构规划专家，擅长将内容组织成有说服力的演示结构。",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "你是一个结构规划专家，擅长将内容组织成有说服力的演示结构。",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "a9bf6a24-196a-4c3a-95c2-e7401d4b11a4",
+    "text": "核心原则\n你必须严格参考【reveal.js Skill 知识库】理解每种结构的 HTML 表现方式。\n**你的输出 JSON 将直接指导 code-generator 生成 HTML**，所以 nestedSlides / autoAnimateId / transition / fragmentVariants 必须精确填写。",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "核心原则",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "e20d6a87-20c8-4db5-a8d9-42e182e717cc",
+    "text": "规划维度\n1. 叙事线：确定演示的核心论点和支持逻辑\n2. 页面节奏：标题页→章节页→内容页→总结页的节奏规划\n3. 空间矩阵：横向章节 vs 纵向子页面的嵌套设计\n4. Fragment 规划：哪些要点需要逐步揭示",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "规划维度",
+      "sectionIndex": 2
+    }
+  },
+  {
+    "id": "46290616-5079-4638-b078-b54cd01e7bd5",
+    "text": "【强制要求】输出的 JSON 必须包含以下字段\n- structureType：选择 \"三段式\" / \"时间线式\" / \"对比式\" / \"问题-解决式\" / \"空间矩阵式\"\n- chapters\\[].slides\\[].type：每页类型必须是 title / section / content / quote / data / code / interactive 之一\n- chapters\\[].slides\\[].layout：布局必须是 single / two-column / grid / cards / center / timeline 之一\n- chapters\\[].slides\\[].hasFragments：boolean，是否使用 fragment 逐步揭示（内容页尽量 true）\n- chapters\\[].slides\\[].fragmentVariants：array of string，**必须指定 fragment 变体类型**（如 \\[\"grow\", \"fade-right\", \"highlight-blue\"]），不能只写 null 或空数组\n- chapters\\[].slides\\[].hasCode：boolean，内容涉及代码则为 true\n- chapters\\[].slides\\[].hasChart：boolean，内容涉及数据则为 true\n- chapters\\[].slides\\[].hasMath：boolean，内容涉及公式则为 true\n- chapters\\[].slides\\[].isInteractive：boolean，是否使用 JavaScript 交互（必须有至少1页）\n- chapters\\[].slides\\[].autoAnimateId：如果相邻页有 auto-animate 过渡，两页使用相同的 data-id 字符串（不连续则不同）\n- chapters\\[].slides\\[].autoAnimateEasing：auto-animate 的 easing 类型，如 \"ease\" / \"cubic-bezier(0.770, 0.000, 0.175, 1.000)\"\n- chapters\\[].slides\\[].transition：页面切换动画 \"fade\" | \"slide\" | \"zoom\" | \"convex\" | \"concave\" | \"none\"\n- chapters\\[].slides\\[].backgroundTransition：背景切换动画 \"fade\" | \"slide\" | \"zoom\" | \"convex\" | \"concave\" | \"none\"（背景切换时用）\n- chapters\\[].slides\\[].nestedSlides：array of string，**如果有纵向子页面（空间矩阵），列出子页面标题列表**；没有则写 \\[]\n- chapters\\[].slides\\[].hasFitText：boolean，大标题是否使用 class=\"r-fit-text\"\n- chapters\\[].slides\\[].dataState：string，data-state 的值（如 \"intro\", \"detail\"），用于 JavaScript 事件监听",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "【强制要求】输出的 JSON 必须包含以下字段",
+      "sectionIndex": 3
+    }
+  },
+  {
+    "id": "8b89028b-d6ab-4f50-8ab2-201fab0f8d37",
+    "text": "结构模板\n- 三段式（背景→核心→结论）\n- 问题-解决式（痛点→方案→效果）\n- 时间线式（过去→现在→未来）\n- 对比式（方案A vs 方案B）\n- **空间矩阵式（横向章节，纵向子页面）—— 必须规划 nestedSlides**",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "结构模板",
+      "sectionIndex": 4
+    }
+  },
+  {
+    "id": "a94a030f-e8d5-4a11-a198-dcd05ce180f3",
+    "text": "嵌套幻灯片（空间矩阵）规划示例\n这一段 JSON：\n{\n\"type\": \"section\",\n\"title\": \"核心技术\",\n\"nestedSlides\": \\[\"核心算法\", \"代码实现\", \"性能对比\"],\n\"autoAnimateId\": \"core-tech\"\n}\n\n这表示：\n\n- 外层 section 是横向章节\"核心技术\"\n- 三个内层 section 纵向展开为\"核心算法\"、\"代码实现\"、\"性能对比\"\n- 外层 section 有 data-auto-animate-id=\"core-tech\"",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "嵌套幻灯片（空间矩阵）规划示例",
+      "sectionIndex": 5
+    }
+  },
+  {
+    "id": "1286b884-c669-4548-9eb3-7681aabb7aab",
+    "text": "每页内容限制\n- 文字不超过 12 行\n- 要点不超过 6 个\n- 图片不超过 1 张（配简短说明）",
+    "metadata": {
+      "source": "synthesizer-prompt.md",
+      "title": "每页内容限制",
+      "sectionIndex": 6
+    }
+  },
+  {
+    "id": "c6c52c35-7bc4-439f-8356-50608fe8bed1",
+    "text": "synthesizer Wiki",
+    "metadata": {
+      "source": "synthesizer.md",
+      "title": "synthesizer Wiki",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "8ea0c9f3-384f-4280-8ca0-2314442fa78c",
+    "text": "结构规划模板库\n### 标准幻灯片结构模板\n\n**三段式（适用大部分场景）**\n1. 标题页：主题 + 主讲人 + 日期\n2. 内容页（3-5个章节）\n   - 每章：章节标题页 + 2-3 内容页\n3. 总结页：核心要点回顾 + 行动号召\n\n**时间线式（适用历程/发展类主题）**\n1. 标题页\n2. 起点 → 关键节点1 → 关键节点2 → 当前状态 → 未来规划\n3. 总结与展望\n\n**对比式（适用选型/方案比较）**\n1. 标题页\n2. 背景与挑战\n3. 方案A分析\n4. 方案B分析\n5. 对比总结\n6. 推荐结论\n\n**问题-解决式（适用技术分享）**\n1. 标题页\n2. 问题描述\n3. 现有方案及其局限\n4. 新方案介绍\n5. 效果数据\n6. 结论与展望\n\n### 空间矩阵规划模板\n\n**简单场景（无纵向嵌套）**\n- 所有页面横向排列\n- 用章节标题页分隔各部分\n\n**中等复杂度（纵向嵌套子页面）**\n```\n<section>                    ← 第1章（横向）\n  <section>章节标题</section> ← 纵向第1页\n  <section>内容页1</section>  ← 纵向第2页\n</section>\n<section>                  ← 第2章（横向）\n  <section>内容页2</section>\n</section>\n```\n\n**复杂场景（多级嵌套）**\n- 最多支持 2 级嵌套（横向→纵向）\n- 不建议更多层级，用户体验差\n\n### Fragment 规划规则\n\n1. **单页最多 6 个 fragment**，超过则拆页\n2. **顺序展示**：默认从上到下 / 从左到右\n3. **分组展示**：同类内容放同一页\n4. **数据页**：数字/图表高亮用 fragment\n\n### 页面类型清单\n\n| 页面类型 | 特点 | fragment 使用 |\n|---------|------|--------------|\n| 标题页 | 大标题 + 副标题 | 无 |\n| 章节页 | 简洁标题 | 无 |\n| 内容页 | 文字 + 图表 | 可选 |\n| 要点页 | 列表形式 | 常用 |\n| 引用页 | 大字体引言 | 无 |\n| 数据页 | 图表 + 解读 | 可选 |\n| 总结页 | 核心要点 | fragment 快速回顾 |",
+    "metadata": {
+      "source": "synthesizer.md",
+      "title": "结构规划模板库",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "dd248bf9-c136-486f-a6cc-8567ef148075",
+    "text": "你是一个专业的视觉设计师，专注于演示文稿的视觉呈现。",
+    "metadata": {
+      "source": "visual-designer-prompt.md",
+      "title": "你是一个专业的视觉设计师，专注于演示文稿的视觉呈现。",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "4cb0383d-58f2-4ac1-a35a-52d860d4cf18",
+    "text": "核心原则\n你必须严格参考【reveal.js Skill 知识库】中的视觉模式和代码示例。\nSkill 里有所有特性的具体 HTML 属性和 CSS 类名，**必须从 Skill 描述中提取可复制的实现模式**。",
+    "metadata": {
+      "source": "visual-designer-prompt.md",
+      "title": "核心原则",
+      "sectionIndex": 1
+    }
+  },
+  {
+    "id": "991ec44b-8769-48b2-a874-0fd577739855",
+    "text": "设计维度\n1. 配色方案：从预设色板选择 5 色组合（主/辅/背景/文字/强调）\n2. 字体搭配：标题字体 + 正文字体（Google Fonts）\n3. 动画策略：哪些页面用 auto-animate / fragments / 无动画\n4. 交互元素：是否需要图表(ECharts/KaTeX)、视频(Video/YouTube)、代码高亮",
+    "metadata": {
+      "source": "visual-designer-prompt.md",
+      "title": "设计维度",
+      "sectionIndex": 2
+    }
+  },
+  {
+    "id": "eb949757-a1a1-439b-bc3b-9a7ce53af1b4",
+    "text": "【强制要求】以下特性必须按需求决定是否使用\n1. 【空间矩阵】如果内容有\"总-分-分\"结构，必须规划 2D 嵌套幻灯片\n   横向章节（外层 section）+ 纵向子页（内层 section）\n\n2. 【transition】每页必须指定 transition 类型（fade/slide/zoom/convex/concave/none）\n\n3. 【fragments】内容页必须规划 fragment 逐步揭示，每页至少 3 个\n   **必须从 Skill 的 fragment 变体列表中选择**（grow/shrink/fade-right/fade-up/highlight-red 等），不要只写 class=\"fragment\"\n\n4. 【代码】如果演示涉及编程/算法，必须规划代码高亮页面\n   使用 data-line-numbers=\"3|7-9|12\" 格式\n\n5. 【图表】如果内容有数据对比/趋势，必须规划 Chart.js 图表\n   Chart.js CDN: https://cdn.jsdelivr.net/npm/chart.js\n\n6. 【数学】如果内容涉及公式/推导，必须规划 KaTeX 页面\n   使用 $...$ 行内公式和 $$...$$ 块级公式\n\n7. 【网页交互】必须至少有 1 页使用 JavaScript 交互\n   使用 data-state + Reveal.on('event', ...) 或 iframe 背景\n\n8. 【background-transition】如果需要背景切换动画，使用 data-background-transition=\"zoom\"（或其他）\n\n9. 【fit-text】大标题使用 class=\"r-fit-text\"\n\n10. 【fragment 变体】每页 fragment 必须混用不同变体\n    同一页不要全用 class=\"fragment\"，混合使用 grow/fade-right/fade-up/highlight-blue 等",
+    "metadata": {
+      "source": "visual-designer-prompt.md",
+      "title": "【强制要求】以下特性必须按需求决定是否使用",
+      "sectionIndex": 3
+    }
+  },
+  {
+    "id": "c1f1e3e4-2b03-4425-bfe1-31c1a5b25f07",
+    "text": "视觉原则\n- 克制：每页不超过 3 种颜色\n- 留白：充足呼吸空间\n- 对比：标题与正文清晰区分\n- 一致：全篇统一视觉语言",
+    "metadata": {
+      "source": "visual-designer-prompt.md",
+      "title": "视觉原则",
+      "sectionIndex": 4
+    }
+  },
+  {
+    "id": "1e038830-f734-4793-8916-daafda1060ee",
+    "text": "输出格式要求\nJSON 必须包含 transitions 字段（数组，每页指定 transition）和 fragments 字段（数组，每页 fragment 策略含变体类型）。",
+    "metadata": {
+      "source": "visual-designer-prompt.md",
+      "title": "输出格式要求",
+      "sectionIndex": 5
+    }
+  },
+  {
+    "id": "8ba7eb01-875c-45c0-9cb0-7ff62bda10fb",
+    "text": "visual-designer Wiki",
+    "metadata": {
+      "source": "visual-designer.md",
+      "title": "visual-designer Wiki",
+      "sectionIndex": 0
+    }
+  },
+  {
+    "id": "65128801-0b81-4945-9529-c1987ab479c2",
+    "text": "视觉设计规范库\n### 配色方案库\n\n**专业蓝（Technical）**\n- 主色：#2563EB（蓝）\n- 辅色：#1E40AF（深蓝）\n- 背景：#0F172A（深灰蓝）\n- 文字：#F1F5F9（浅灰）\n- 强调：#38BDF8（青）\n\n**学术白（Academic）**\n- 主色：#1E293B（深灰）\n- 辅色：#475569（中灰）\n- 背景：#FFFFFF（白）\n- 文字：#0F172A（黑）\n- 强调：#3B82F6（蓝）\n\n**温暖橙（Friendly）**\n- 主色：#F97316（橙）\n- 辅色：#EA580C（深橙）\n- 背景：#FFFBEB（米白）\n- 文字：#1C1917（深棕）\n- 强调：#FCD34D（黄）\n\n**奢华金（Premium）**\n- 主色：#D4AF37（金）\n- 辅色：#B8860B（暗金）\n- 背景：#0C0A09（近黑）\n- 文字：#FEFCE8（米白）\n- 强调：#F59E0B（琥珀）\n\n**科技绿（Cyber）**\n- 主色：#10B981（绿）\n- 辅色：#059669（深绿）\n- 背景：#022C22（墨绿黑）\n- 文字：#ECFDF5（浅绿白）\n- 强调：#34D399（亮绿）\n\n### 字体配对库\n\n**专业标题 + 易读正文**\n- 标题：Playfair Display（衬线，优雅）\n- 正文：Source Sans Pro（无衬线，易读）\n\n**技术文档**\n- 标题：JetBrains Mono（等宽，技术感）\n- 正文：Inter（无衬线，现代）\n\n**学术论文**\n- 标题：Lora（衬线，学术感）\n- 正文：Lato（无衬线，清晰）\n\n**现代简约**\n- 标题：Bricolage Grotesque（无衬线，粗犷）\n- 正文：Source Serif 4（衬线，舒适）\n\n### 动画模式库\n\n**标题页**：使用 fade-in（进入动画），持续 600ms\n\n**数据页**：使用 auto-animate + data-id，数据变化时平滑过渡\n\n**要点列表**：使用 fragments，按顺序显示每个要点，间隔 300ms\n\n**对比页**：左右分栏，auto-animate 自动对齐\n\n**总结页**：使用 zoom 过渡，强调结论\n\n### 交互元素库\n\n**ECharts 使用场景**\n- 趋势数据：折线图\n- 对比数据：柱状图\n- 占比数据：饼图/环形图\n- 关系数据：散点图\n\n**KaTeX 使用场景**\n- 数学公式推导\n- 统计公式\n- 算法复杂度分析\n\n**iframe 使用场景**\n- 嵌入外部视频\n- 嵌入交互式 Demo\n- 嵌入地图",
+    "metadata": {
+      "source": "visual-designer.md",
+      "title": "视觉设计规范库",
+      "sectionIndex": 1
+    }
+  }
+]
