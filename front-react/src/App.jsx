@@ -7,6 +7,7 @@ import MainPanel from './components/MainPanel.jsx';
 import RightPanel from './components/RightPanel.jsx';
 import AnimationWorkspace from './components/AnimationWorkspace.jsx';
 import ConsultingWorkspace from './components/ConsultingWorkspace.jsx';
+import ControlPanel from './components/ControlPanel.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import ToastContainer, { addToast } from './components/Toast.jsx';
 
@@ -316,6 +317,16 @@ export default function App() {
             </svg>
             咨询
           </button>
+          <button
+            className={`ws-tab ${workspace === 'control' ? 'active' : ''}`}
+            onClick={() => setWorkspace('control')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            控制台
+          </button>
         </div>
 
         <div id="header-controls">
@@ -397,6 +408,10 @@ export default function App() {
 
       <div className="main-panel" style={{ display: workspace === 'consulting' ? 'flex' : 'none' }}>
         <ConsultingWorkspace customApis={customApis} />
+      </div>
+
+      <div className="main-panel" style={{ display: workspace === 'control' ? 'flex' : 'none' }}>
+        <ControlPanel />
       </div>
 
       {confirmAction && (
