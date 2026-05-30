@@ -1,0 +1,43 @@
+# 云心 reveal.js 幻灯片优化迭代记录
+
+## 项目状态
+- 本地路径: /Users/mac/Desktop/reveal-agent (原指定路径 /Users/mac/Desktop/助教研究/云心1.1 不存在)
+- GitHub: https://github.com/dxfxbfg/reveal-agent (已迁移，原地址 dxfxbfg/-reveal.js)
+- Vercel: https://reveal-js-ha8o.vercel.app
+- 技术栈: React+Vite 前端 / Express+WebSocket 后端 / 3-agent AI 流水线
+
+---
+
+## 本次迭代 (2026-05-30 晚)
+
+### 完成的工作
+1. **修复 .gitignore** - 添加 `.env`, `.git/`, `__pycache__/`, `*.pyc`, `*.swp`, `*~`
+2. **初始化 Git 仓库** - 之前从未 commit，193 个文件首次提交
+3. **处理 Git 冲突** - remote 有部分删除提交（删除了 vercel.json, readme.md, package.json），本地做 rebase 保留完整内容
+4. **推送 GitHub** - 成功推送到 https://github.com/dxfxbfg/reveal-agent
+
+### 发现
+- 远程仓库已被迁移/重命名到 `dxfxbfg/reveal-agent`，旧地址 `dxfxbfg/-reveal.js` 已失效
+- vercel.json 被远程有意删除（可能是部署配置变更）
+
+---
+
+## 下次迭代建议
+
+### 高优先级
+1. **添加 vercel.json** - 当前 Vercel 部署可能缺少构建配置，需确认前端是否正确构建
+2. **预览区增强** - Preview.jsx iframe 的 postMessage 通信在某些情况下可能不稳定
+3. **错误处理改进** - ErrorBoundary 和 feedback-loop 的错误处理流程可精简
+
+### 中优先级
+4. **前端 build 验证** - 检查 `front-react/dist/` 是否是最新的生产构建
+5. **CSS 优化** - styles.css 有 7904 bytes，检查是否有冗余
+6. **API 路由清理** - index.js 中部分端点（如 PDF 导出 puppeteer）可能不稳定
+
+### 低优先级
+7. **多语言/国际化** - 目前只有中文界面
+8. **性能监控** - 添加 token 使用量统计
+
+---
+
+*每次迭代只做 1-2 个重点改进，不要贪多*

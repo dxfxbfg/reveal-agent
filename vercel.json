@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "buildCommand": "cd front-react && npm install && npm run build",
+  "outputDirectory": "front-react/dist",
+  "installCommand": "cd front-react && npm install",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/**", "destination": "/api" },
+    { "source": "/ws", "destination": "/ws" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ]
+}
