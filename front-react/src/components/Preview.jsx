@@ -5,17 +5,29 @@ export default function Preview({ html, active = true }) {
   const readyRef = useRef(false);
   const pendingNavRef = useRef([]);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
-  // 监听 iframe 内的 ready 信号
+  // 监听 iframe 内的 ready / error 信号
   useEffect(() => {
     function onMessage(e) {
-      if (!e.data || e.data.revealReady === true) {
+      if (!e.data) return;
+      if (e.data.revealReady === true) {
         readyRef.current = true;
         setReady(true);
+        setLoadError(null);
         // 冲刷积压的 nav 命令
         const queue = pendingNavRef.current;
         pendingNavRef.current = [];
         queue.forEach((cmd) => sendNav(cmd));
+      } else if (e.data.revealReady === false) {
+        // srcdoc 内的 Reveal 加载失败（CDN 慢 / 不可达）
+        readyRef.current = false;
+        setReady(false);
+        setLoadError(e.data.reason || 'Reveal.js 未能加载');
+      } else if (e.data.revealError) {
+        // srcdoc 内的运行时错误（如 reveal 抛出）
+        setLoadError(e.data.revealError);
       }
     }
     window.addEventListener('message', onMessage);
@@ -27,6 +39,7 @@ export default function Preview({ html, active = true }) {
     if (ref.current && html) {
       readyRef.current = false;
       setReady(false);
+      setLoadError(null);
       pendingNavRef.current = [];
 
       const enhancedHtml = html.replace(
@@ -39,7 +52,7 @@ export default function Preview({ html, active = true }) {
               if(!r){
                 // 最多轮询 5s（200ms × 25 次），避免 CDN 慢时永久挂起
                 if (++attempts > 25) {
-                  try { parent.postMessage({ revealReady: false, reason: 'no Reveal' }, '*'); } catch(e){}
+                  try { parent.postMessage({ revealReady: false, reason: 'Reveal.js 加载超时（CDN 不可达？）' }, '*'); } catch(e){}
                   return;
                 }
                 setTimeout(setup, 200);
@@ -63,6 +76,13 @@ export default function Preview({ html, active = true }) {
                   r.next();
                 });
               }
+              // 上报 srcdoc 内运行时报错到父页面
+              window.addEventListener('error', function(ev){
+                try { parent.postMessage({ revealError: (ev.message || '未知错误') + ' @ ' + (ev.filename || '?') }, '*'); } catch(_){}
+              });
+              window.addEventListener('unhandledrejection', function(ev){
+                try { parent.postMessage({ revealError: '未捕获 Promise: ' + (ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)) }, '*'); } catch(_){}
+              });
               // 通知父页面：已就绪
               try { parent.postMessage({ revealReady: true }, '*'); } catch(e){}
             }
@@ -73,7 +93,7 @@ export default function Preview({ html, active = true }) {
       );
       ref.current.srcdoc = enhancedHtml;
     }
-  }, [html]);
+  }, [html, retryNonce]);
 
   const sendNav = useCallback((cmd) => {
     const win = ref.current?.contentWindow;
@@ -136,6 +156,26 @@ export default function Preview({ html, active = true }) {
           <div className="placeholder-sub">生成演示文稿后将在此显示</div>
         </div>
       </div>
+      {loadError && (
+        <div id="preview-error" role="alert">
+          <div className="preview-error-icon" aria-hidden="true">⚠</div>
+          <div className="preview-error-body">
+            <div className="preview-error-title">预览加载失败</div>
+            <div className="preview-error-msg">{loadError}</div>
+            <div className="preview-error-hint">可能原因：CDN 不可达 / 沙盒禁用脚本 / 生成内容含语法错误</div>
+          </div>
+          <button
+            type="button"
+            className="preview-error-retry"
+            onClick={() => {
+              setLoadError(null);
+              setRetryNonce(n => n + 1);
+            }}
+          >
+            重试
+          </button>
+        </div>
+      )}
       <iframe
         ref={ref}
         id="preview-iframe"
