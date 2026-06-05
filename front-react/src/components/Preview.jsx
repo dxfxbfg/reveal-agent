@@ -1,33 +1,70 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 
 export default function Preview({ html, active = true }) {
   const ref = useRef(null);
+  const readyRef = useRef(false);
+  const pendingNavRef = useRef([]);
+  const [ready, setReady] = useState(false);
 
+  // 监听 iframe 内的 ready 信号
+  useEffect(() => {
+    function onMessage(e) {
+      if (!e.data || e.data.revealReady === true) {
+        readyRef.current = true;
+        setReady(true);
+        // 冲刷积压的 nav 命令
+        const queue = pendingNavRef.current;
+        pendingNavRef.current = [];
+        queue.forEach((cmd) => sendNav(cmd));
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // 每次 html 变化 → 重新注入并重置 ready 状态
   useEffect(() => {
     if (ref.current && html) {
+      readyRef.current = false;
+      setReady(false);
+      pendingNavRef.current = [];
+
       const enhancedHtml = html.replace(
         '</body>',
         `<script>
           (function(){
-            var r;
+            var r, attempts = 0;
             function setup(){
               r = window.Reveal;
-              if(!r){ setTimeout(setup,200); return; }
-              window.addEventListener('message',function(e){
-                if(!e.data||!e.data.revealNav) return;
-                var cmd=e.data.revealNav;
-                if(cmd==='prev') r.prev();
-                else if(cmd==='next') r.next();
-                else if(cmd==='first') r.slide(0);
-                else if(cmd==='last') r.slide(r.getTotalSlides()-1);
+              if(!r){
+                // 最多轮询 5s（200ms × 25 次），避免 CDN 慢时永久挂起
+                if (++attempts > 25) {
+                  try { parent.postMessage({ revealReady: false, reason: 'no Reveal' }, '*'); } catch(e){}
+                  return;
+                }
+                setTimeout(setup, 200);
+                return;
+              }
+              window.addEventListener('message', function(e){
+                if(!e.data || !e.data.revealNav) return;
+                var cmd = e.data.revealNav;
+                if (cmd === 'prev') r.prev();
+                else if (cmd === 'next') r.next();
+                else if (cmd === 'first') r.slide(0);
+                else if (cmd === 'last') r.slide(r.getTotalSlides() - 1);
               });
-              // 点击翻页后备 — 非交互元素点击前进
-              document.querySelector('.reveal').addEventListener('click',function(e){
-                if(e.button!==0) return;
-                if(window.getSelection&&String(window.getSelection()).trim()) return;
-                if(e.target.closest('a, button, input, textarea, select, .controls, .progress')) return;
-                r.next();
-              });
+              // 点击翻页后备
+              var revealEl = document.querySelector('.reveal');
+              if (revealEl) {
+                revealEl.addEventListener('click', function(e){
+                  if (e.button !== 0) return;
+                  if (window.getSelection && String(window.getSelection()).trim()) return;
+                  if (e.target.closest('a, button, input, textarea, select, .controls, .progress')) return;
+                  r.next();
+                });
+              }
+              // 通知父页面：已就绪
+              try { parent.postMessage({ revealReady: true }, '*'); } catch(e){}
             }
             setup();
           })();
@@ -39,16 +76,25 @@ export default function Preview({ html, active = true }) {
   }, [html]);
 
   const sendNav = useCallback((cmd) => {
-    if (ref.current?.contentWindow) {
-      ref.current.contentWindow.postMessage({ revealNav: cmd }, '*');
+    const win = ref.current?.contentWindow;
+    if (!win) return;
+    if (!readyRef.current) {
+      // 还没就绪，先排队；ready 后会冲刷
+      pendingNavRef.current.push(cmd);
+      return;
     }
+    win.postMessage({ revealNav: cmd }, '*');
   }, []);
 
   useEffect(() => {
     if (!active) return;
     const handleKey = (e) => {
       if (!ref.current) return;
-      if (document.activeElement === ref.current || document.activeElement?.tagName === 'TEXTAREA') return;
+      // 避免在输入控件里拦截
+      const tag = document.activeElement?.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
+      // 避免在 iframe 内（focus 进了 srcdoc 的内容）
+      if (document.activeElement === ref.current) return;
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowDown':
@@ -76,7 +122,7 @@ export default function Preview({ html, active = true }) {
   }, [sendNav, active]);
 
   return (
-    <div id="preview-wrapper">
+    <div id="preview-wrapper" data-preview-ready={ready ? 'true' : 'false'}>
       <div id="preview-placeholder" className={html ? 'hidden' : ''}>
         <div className="placeholder-card">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -94,7 +140,7 @@ export default function Preview({ html, active = true }) {
         ref={ref}
         id="preview-iframe"
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
-        tabIndex={0}
+        tabIndex={-1}
         style={{ display: html ? 'block' : 'none' }}
         title="preview"
       />
