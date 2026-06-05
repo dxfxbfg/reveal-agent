@@ -116,8 +116,8 @@
 
 ### 高优先级
 1. **Vercel 部署健康度检查** - 4 个 production 环境（reveal-js-ha8o / reveal-js / reveal-js-3ilq / reveal-js-dx3e / slidegen-yunxin）哪些还在用、哪些可以清理
-2. **预览区 srcdoc 注入脚本健壮性** - 当前 5s 兜底可以接受，但如果 Reveal.js 在 CDN 失败时用户没有任何提示，可加 inline 错误提示
-3. **CSS 体积优化** - styles.css 90.7 KB / gzip 12.46 KB，检查是否有未使用的 workspace 样式（如 deprecated/ 目录里的旧 workspace）
+2. ~~**预览区 srcdoc 注入脚本健壮性** - 当前 5s 兜底可以接受，但如果 Reveal.js 在 CDN 失败时用户没有任何提示，可加 inline 错误提示~~ ✅ 2026-06-06
+3. **CSS 体积优化** - styles.css 92.02 KB / gzip 12.75 KB（新错误浮层增加 1.3KB 后），检查是否有未使用的 workspace 样式（如 deprecated/ 目录里的旧 workspace）
 
 ### 中优先级
 4. **后端 API 路由稳定性** - backend/index.js 的 PDF 导出端点用 puppeteer 在小内存机器上易崩溃，可改为客户端 html2pdf 方案
@@ -127,6 +127,42 @@
 ### 低优先级
 7. **多语言/国际化** - 目前只有中文界面
 8. **性能监控** - 添加 token 使用量统计
-9. **WebSocket 重连退避** - ws.js 简单重连可加指数退避
+9. ~~**WebSocket 重连退避** - ws.js 简单重连可加指数退避~~ ✅ 2026-06-06
 
 *每次迭代只做 1-2 个重点改进，不要贪多*
+
+---
+
+## 迭代 (2026-06-06) - 预览错误提示 + WS 指数退避
+
+### 完成的工作
+1. **Preview srcdoc CDN 失败 → inline 错误浮层**（中优 #2 续）
+   - 修旧 bug：父页面 `onMessage` 条件写错（`!e.data || e.data.revealReady === true`），把 `revealReady: false` 的失败信号也当成"就绪"
+   - 现在显式区分 `revealReady: true` / `false` / `revealError` 三种信号
+   - srcdoc 注入脚本新增 `window.addEventListener('error')` + `unhandledrejection` 监听，srcdoc 内运行时 JS 错误也会上报
+   - 父页面失败时渲染错误浮层：图标 + 原因 + 可能原因提示 + 重试按钮
+   - 重试按钮触发 `retryNonce++` → effect 重跑 → srcdoc 重新注入
+2. **WebSocket 指数退避**（低优 #9）
+   - 旧：固定 2s × 5 次，第 6 次断开就放弃
+   - 新：1s → 2s → 4s → 8s → 16s → 30s 封顶 + ±20% 抖动，**永不放弃**
+   - 配套 `disconnectWS(sessionId)` 主动断开 API + `_closed` 标记，区分主动断开 vs 意外断开
+   - `onopen` 重置重试计数；`onclose` 前先 clearTimeout 避免重复调度
+
+### Build
+- dist: `index-DOGUWGMQ.js` → `index-D9MyKh7R.js`（258 → 259.5 KB / gzip 75.86 KB）
+- dist: `index-DI_QzMBb.css` → `index-DfqEY6aI.css`（90.7 → 92.0 KB / gzip 12.75 KB）
+- 0 错误，0 警告
+- vite preview 验证：root 200, js 200 (262131B), css 200 (92017B)
+
+### GitHub
+- commit: `6d7c2f4` - feat: 预览失败 inline 错误提示 + WebSocket 指数退避
+- 已 push 到 main：0517f70..6d7c2f4
+
+### Vercel
+- reveal-js-ha8o.vercel.app 持续不通（国内到 Vercel 边缘网络问题）
+- 本地 vite preview 三个资源全部 200 OK，Vercel 端 webhook 触发后会自动重新部署
+
+### 下次迭代建议（按优先级）
+1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
+2. **CSS 体积优化**（高优 #3）— styles.css 92 KB 是否有未使用 workspace 样式
+3. **后端 PDF 导出 → 客户端 html2pdf**（中优 #4）
