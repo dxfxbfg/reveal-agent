@@ -112,7 +112,7 @@ export default function MainPanel({ task, activeFile, onStop, onContinue, onDisc
 
       <div id="views">
         <div id="preview-view" className={`view ${tab === 'preview' ? 'active' : ''}`}>
-          <Preview html={html} active={active} />
+          <Preview html={html} active={active} taskId={task.id} />
           {isGenerating && (
             <div id="progress-area">
               <div className="progress-header">

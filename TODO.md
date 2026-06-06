@@ -417,7 +417,44 @@ printWindow.addEventListener('load', () => {
 - 修复必须用户手动：进 Vercel dashboard → Project Settings → Git → 重新连接 GitHub 仓库（断一次再连）
 - 本次 push 后 Vercel 端 webhook 仍不会触发重新部署
 
-### 下次迭代建议
+## 迭代 (2026-06-07 cron 6) - 预览区幻灯片位置保留
+
+### 完成的工作
+
+**1. Preview 切走/重连后保留幻灯片位置（低优 #3 续）**
+
+旧问题：切到 ControlPanel 等非 slides workspace 时，preview iframe srcdoc 被清空（释放内存）；切回时通过 `retryNonce++` 强制 re-inject，**但 reveal.js 总会从第 1 张开始**，用户看到的位置断档。
+
+新方案：localStorage 持久化当前 slide 索引
+- key 命名：`ra_preview_slide_idx_<taskId>` = `"h,v"`（沿用 `ra_chat_draft_*` / `ra_active_workspace` 命名规范）
+- 写入时机：srcdoc 内 `r.on('slidechanged', ...)` 触发时，把 `{ h, v }` postMessage 给父页面，Preview.jsx 写 localStorage
+- 恢复时机：srcdoc 注入时，Preview.jsx 读 localStorage → 通过字符串占位符内联到注入脚本（`'__RESTORE_H__'` / `'__RESTORE_V__'`） → srcdoc 内 `tryRestore()` 在 `r.on('ready')` 后调 `r.slide(h, v)`
+
+边界处理：
+- 占位符必须是字面量字符串，不能写 `${...}`（被 JSX 解析为表达式导致 build 失败 — 实测踩坑，立刻 patch 修正）
+- loadSavedIdx 严格校验（NaN、负数、h 越界 totalSlides）→ 不合法 fallback 到 0
+- 同一 html 重新注入（切回 workspace）时恢复；html 变化（task 切换 / 新生成）时仍按 saved（taskId 隔离，不会窜）
+- 旧版 reveal 没有 `r.on()` 时 setTimeout 200ms 兜底
+- safeGet / safeSet 全部 try/catch（与 config.js 4MB 兜底风格一致）
+
+**2. Preview 组件 prop 扩展**
+- `MainPanel.jsx` 传 `taskId={task.id}` 给 Preview
+- Preview 新增 `taskId` prop,onMessage 监听里捕获 `revealSlideIdx` 时按 taskId 写 localStorage
+
+### Build
+- dist: `index-DG_vAJR7.js` → `index-ywzjOk2L.js`（**→** 后续 build 滚到 `index--G1gKnFM.js`，264.09 KB / gzip 77.48 KB）
+- 0 错误，0 警告
+- vite preview 验证：root/js/css 全部 HTTP 200
+
+### GitHub
+- commit 待 push
+- `2.html` / `2.css` 等备份文件已自动消失（untracked 列表为空，无需清理）
+
+### Vercel
+- 仍然不通（用户需手动重连 GitHub 集成，阻塞所有新功能上线）
+
+### 下次迭代建议（按优先级）
 1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
-2. **大草稿超时清理**（中优）— localStorage 配额有限，如果用户累积 50+ task 每个 task 都有 5KB 草稿（250KB）可能触发 quota exceeded；可加 LRU 上限（如最多保留最近 20 个 task 的草稿）
-3. **预览区 iframe 隐藏 tab 时的 srcdoc 资源释放**（低优）— 切到 ControlPanel 时 preview iframe 仍占内存；可在 workspace 切走时 setSrcdoc('') 释放
+2. **大草稿单条 size 上限**（中优）— 当前 LRU 是按 task 数量淘汰（最多 20 个），如果某 task 单条草稿 > 50KB 仍可能撑爆；可加单条 size 上限（如 20KB）+ 超出截断 + 提示
+3. **后端 puppeteer 路由彻底删除**（中优）— 现在只标记 deprecated，下次主版本可彻底删除 `/api/export/pdf`
+4. **Preview 位置恢复时加个轻提示**（低优）— 切回 slides 时如果索引被恢复（不是 0），可在角落 toast "已恢复到第 N 张"，避免用户困惑"为什么不是从第 1 张开始"
