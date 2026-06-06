@@ -263,3 +263,52 @@ printWindow.addEventListener('load', () => {
 1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
 2. **ChatPanel 输入边界**（中优 #5）— 大段 markdown 粘贴节流
 3. **workspace 切换状态保留**（中优 #6）
+
+---
+
+## 迭代 (2026-06-06 cron 3) - 死代码清理
+
+### 完成的工作
+
+**1. 找出 6 个未引用的 React 组件（死代码）**
+
+清理结果：
+- `GeneratedFiles.jsx` — `App.jsx` 走 `RightPanel` 自己的 inline 实现，未被引用
+- `FileUpload.jsx` — 早期上传组件，被 `App.jsx.handleUploadFiles` + `RightPanel.handleUpload` 取代
+- `ConfigPanel.jsx` — 旧配置面板，模型/质量/页数选择都已内联到 `ChatPanel` + `App.jsx` 顶部
+- `GenerationOverlay.jsx` — 旧全屏 loading，被 `MainPanel` 内的 progress-area 取代
+- `ChatInput.jsx` — 旧 input 组件（84 行 + 自带 DroppedChips），被 `ChatPanel.jsx` 的 inline textarea 取代
+- `DroppedChips.jsx` — 上面 ChatInput 唯一使用者，ChatInput 删了它自然也死
+
+**2. 顺手清理 3 个旧的 ` 2.*` 备份文件**
+- `backend/index 2.js`
+- `front-react/dist/index 2.html`
+- `front-react/dist/assets/index-DR4W856s 2.css`
+
+这些是之前 `cp al 2.*` 那种文件保存习惯的产物，未 tracked 但占仓库体积。
+
+### 验证
+- `node -c backend/index.js` syntax OK
+- `npm run build` 0 错误 0 警告
+- dist hash 完全不变（`index-CZlTpiu4.js` + `index-DR4W856s.css`）— 因为死代码从未被打包，删源码对 bundle 0 影响
+- vite preview: root/js/css 全部 HTTP 200
+
+### Build 对比
+| 资源 | 之前 | 现在 | 变化 |
+|------|------|------|------|
+| dist JS | 259.38 KB | 259.38 KB | 0 |
+| dist CSS | 80.00 KB | 80.00 KB | 0 |
+| 源码组件 | 21 个 | 15 个 | -6 |
+
+源码清掉 6 个 .jsx 文件（合计约 1300 行死代码），bundle 体积不变 — 纯仓库瘦身。
+
+### GitHub
+- commit: 待 push
+
+### Vercel
+- 本次未改 vercel.json，Vercel webhook 会自动重新部署（但 dist 没变，所以新部署实际内容相同）
+
+### 下次迭代建议
+1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
+2. **ChatPanel 输入边界**（中优 #5）— 大段 markdown 粘贴节流
+3. **workspace 切换状态保留**（中优 #6）— 切到 ControlPanel 再切回会丢未保存的输入（如果有）
