@@ -1,6 +1,19 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ChatMessages from './ChatMessages.jsx';
 import ToolLogPanel from './ToolLogPanel.jsx';
+
+// 输入草稿按 taskId 存到 localStorage — 切走/刷新页面后回到当前 task 仍能看到未发送的文字
+// 发送后或丢弃任务时由调用方 saveDraft(task.id, '') 移除 key
+const draftKey = (taskId) => `ra_chat_draft_${taskId}`;
+const loadDraft = (taskId) => {
+  try { return localStorage.getItem(draftKey(taskId)) || ''; } catch { return ''; }
+};
+const saveDraft = (taskId, text) => {
+  try {
+    if (text) localStorage.setItem(draftKey(taskId), text);
+    else localStorage.removeItem(draftKey(taskId));
+  } catch {}
+};
 
 export default function ChatPanel({
   task, onSend, onStop, onContinue, onDiscard,
@@ -11,8 +24,56 @@ export default function ChatPanel({
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [inputText, setInputText] = React.useState('');
-  const [dragOver, setDragOver] = React.useState(false);
+  const [inputText, setInputTextRaw] = useState(() => loadDraft(task.id));
+  const [dragOver, setDragOver] = useState(false);
+
+  // 节流写入 localStorage：keystroke 高频触发的 setInputText 不每次都写盘
+  // pendingDraftRef 保存"待写"的值；rAF 合并到一次写
+  // 注意：必须在 useEffect 之前声明 useRef（避免 TDZ 风险 + 阅读顺序合理）
+  const pendingDraftRef = useRef(null);
+  const draftRafRef = useRef(null);
+
+  const setInputText = useCallback((next) => {
+    setInputTextRaw(typeof next === 'function' ? next : next);
+    const value = typeof next === 'function' ? null : next;  // 函数式 setState 时读不到 prev，留空走下一次 keystroke
+    pendingDraftRef.current = value;
+    if (draftRafRef.current != null) return;  // 已有调度中的 rAF，跳过
+    draftRafRef.current = requestAnimationFrame(() => {
+      draftRafRef.current = null;
+      if (pendingDraftRef.current != null) {
+        saveDraft(task.id, pendingDraftRef.current);
+        pendingDraftRef.current = null;
+      }
+    });
+  }, [task.id]);
+
+  // task 切换时（比如从 task A 切到 task B）重新读 B 的草稿
+  // 否则 React 不会重新调 useState 初始化函数（仅 mount 时跑一次）
+  useEffect(() => {
+    setInputTextRaw(loadDraft(task.id));
+    pendingDraftRef.current = null;
+    if (draftRafRef.current != null) {
+      cancelAnimationFrame(draftRafRef.current);
+      draftRafRef.current = null;
+    }
+    // 把 textarea 高度重置
+    requestAnimationFrame(() => {
+      const ta = textareaRef.current;
+      if (ta) { ta.style.height = 'auto'; }
+    });
+  }, [task.id]);
+
+  // 卸载时把"还没写盘的 pending 值"flush 一次（避免 task 切换瞬间丢字）
+  useEffect(() => () => {
+    if (draftRafRef.current != null) {
+      cancelAnimationFrame(draftRafRef.current);
+      draftRafRef.current = null;
+      if (pendingDraftRef.current != null) {
+        saveDraft(task.id, pendingDraftRef.current);
+        pendingDraftRef.current = null;
+      }
+    }
+  }, [task.id]);
 
   const showEmpty = task.messages.length === 0;
   const isGenerating = task.generation.isGenerating;
@@ -25,7 +86,9 @@ export default function ChatPanel({
   const handleSend = () => {
     if (!inputText.trim() || isGenerating) return;
     onSend(inputText);
-    setInputText('');
+    setInputTextRaw('');
+    saveDraft(task.id, '');  // 显式清草稿
+    pendingDraftRef.current = null;
     requestAnimationFrame(() => {
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     });
@@ -35,14 +98,31 @@ export default function ChatPanel({
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); handleSend(); }
   };
 
+  // 大段粘贴：paste 事件里直接读 clipboardData 一次性 setInputText
+  // 避免浏览器把 paste 拆成几十次 input 事件逐字 setState
+  const handlePaste = (e) => {
+    const text = e.clipboardData?.getData('text');
+    if (text == null) return;  // 让浏览器走默认行为
+    e.preventDefault();
+    const next = inputText + text;
+    setInputTextRaw(next);
+    saveDraft(task.id, next);  // 粘贴内容立即落盘（不走 rAF）
+    pendingDraftRef.current = null;
+    // 下一帧把 textarea 高度撑起来
+    requestAnimationFrame(() => {
+      const ta = textareaRef.current;
+      if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 180) + 'px'; }
+    });
+  };
+
   useEffect(() => {
     const ta = textareaRef.current;
     if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 180) + 'px'; }
   }, [inputText]);
 
-  const inputRef = React.useRef(inputText);
-  const generatingRef = React.useRef(isGenerating);
-  const sendRef = React.useRef(handleSend);
+  const inputRef = useRef(inputText);
+  const generatingRef = useRef(isGenerating);
+  const sendRef = useRef(handleSend);
   inputRef.current = inputText;
   generatingRef.current = isGenerating;
   sendRef.current = handleSend;
@@ -135,6 +215,7 @@ export default function ChatPanel({
           <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileInputChange} />
           <textarea ref={textareaRef} id="chat-input" rows="1"
             value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={handleKey}
+            onPaste={handlePaste}
             placeholder="描述需求... (Enter 发送, 📎 上传文件)" disabled={isGenerating} />
           <button id="send-btn" title="发送 (Enter)" onClick={handleSend} disabled={isGenerating || !inputText.trim()}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

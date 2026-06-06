@@ -18,7 +18,18 @@ export default function App() {
   const taskRef = useRef(task);
   taskRef.current = task;
 
-  const [workspace, setWorkspace] = useState('slides');
+  // workspace 选中状态持久化 — 刷新页面/关闭浏览器后回到上次所在的工作区
+  // 只接受 4 个已知 workspace 值，防止 localStorage 被人为污染后页面渲染异常
+  const [workspace, setWorkspaceRaw] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ra_active_workspace');
+      return ['slides', 'animation', 'consulting', 'control'].includes(saved) ? saved : 'slides';
+    } catch { return 'slides'; }
+  });
+  const setWorkspace = (next) => {
+    setWorkspaceRaw(next);
+    try { localStorage.setItem('ra_active_workspace', next); } catch {}
+  };
   const [confirmAction, setConfirmAction] = useState(null);
   const [globalModel, setGlobalModel] = useState(() => {
     try { return localStorage.getItem('globalModel') || 'normal'; } catch { return 'normal'; }

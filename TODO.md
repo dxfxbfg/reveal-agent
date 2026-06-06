@@ -312,3 +312,54 @@ printWindow.addEventListener('load', () => {
 1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
 2. **ChatPanel 输入边界**（中优 #5）— 大段 markdown 粘贴节流
 3. **workspace 切换状态保留**（中优 #6）— 切到 ControlPanel 再切回会丢未保存的输入（如果有）
+
+---
+
+## 迭代 (2026-06-06 cron 4) - workspace 状态 + 输入草稿持久化
+
+### 完成的工作
+
+**1. workspace 选中状态持久化（中优 #6 主任务）**
+- 旧：`useState('slides')`，刷新页面就回到 slides；切到 ControlPanel 再切回，状态全靠 React 内存
+- 新：`localStorage['ra_active_workspace']`，白名单校验 4 个已知值（slides/animation/consulting/control），防止被人为污染后页面渲染异常
+- setter 包装：setWorkspace 同步写 localStorage，try/catch 容错（Safari 隐私模式 quota exceeded）
+
+**2. ChatPanel 输入草稿持久化（中优 #6 主任务）**
+- 旧：textarea 输入只在 React state 里，切走/刷新就丢
+- 新：按 `taskId` 存到 `localStorage['ra_chat_draft_<taskId>']`
+  - mount 时 lazy init 读
+  - useEffect 监听 task.id 变化（task 切换时重新 loadDraft）
+  - 发送时显式清掉草稿
+  - 组件卸载 / task 切换时 flush 未写盘的 pending 值
+- 每个 task 独立草稿，切回 task 看到的是切走前的内容
+
+**3. 大段 markdown 粘贴节流（中优 #5）**
+- 旧：浏览器把 paste 拆成几十次 input 事件逐字 setState，几千字 markdown 粘贴时 textarea 闪烁 + React re-render 风暴
+- 新：`onPaste` handler 直接读 `e.clipboardData.getData('text')` 一次性 setState + 立即落盘（不走 rAF）
+- keystroke 路径额外加 rAF 合并：每次 onChange 设置 `pendingDraftRef.current`，下一帧统一写 localStorage。极端快速输入场景下避免每 keystroke 写盘
+
+**4. 边界处理**
+- localStorage 操作全部 try/catch 包裹（与 config.js / AnimationWorkspace.jsx / ConsultingWorkspace.jsx 现有约定一致）
+- 卸载 cleanup 用 `useEffect(() => () => ...)` 形式，依赖 task.id → task 切换时先跑旧 cleanup 再跑新 effect，保证旧 task 的 pending 值不被新 task 覆盖
+- 卸载时 cancelAnimationFrame + flush，避免 task 切换瞬间丢字
+
+### Build
+- dist: `index-CZlTpiu4.js` → `index-DG_vAJR7.js`（259.38 → 260.70 KB，+1.3 KB / gzip 75.89 → 76.22 KB，+0.3 KB）
+- dist: CSS hash 不变（80.00 KB）
+- 0 错误，0 警告
+- vite preview 验证：root 200, js 200 (263,402B), css 200 (80,000B)
+- 验证 grep：新代码已进 bundle（`ra_chat_draft_` 1 处、`ra_active_workspace` 1 处）
+
+### GitHub
+- 待 commit + push（本轮结尾执行）
+
+### Vercel
+- **重要发现**：reveal-js-ha8o / reveal-js / reveal-js-3ilq / reveal-js-dx3e / slidegen-yunxin 5 个 production 环境的最新 deployment SHA 都是 `f2cdcdb`（2026-05-30 初始 commit），**完全没有同步 6-05 之后 4 个 commit 的部署**（postMessage 握手、WS 指数退避、客户端 PDF 导出、死代码清理、本次持久化全部没上线）
+- 这是 skill 文档"Vercel ↔ GitHub 集成被断开"典型症状——仓库从 `dxfxbfg/-reveal.js` 迁移到 `dxfxbfg/reveal-agent` 后，Vercel 上的旧 deployment 配置指向老 URL，OAuth 集成断开
+- 修复必须用户手动：进 Vercel dashboard → Project Settings → Git → 重新连接 GitHub 仓库（断一次再连）
+- 本次 push 后 Vercel 端 webhook 仍不会触发重新部署
+
+### 下次迭代建议
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **大草稿超时清理**（中优）— localStorage 配额有限，如果用户累积 50+ task 每个 task 都有 5KB 草稿（250KB）可能触发 quota exceeded；可加 LRU 上限（如最多保留最近 20 个 task 的草稿）
+3. **预览区 iframe 隐藏 tab 时的 srcdoc 资源释放**（低优）— 切到 ControlPanel 时 preview iframe 仍占内存；可在 workspace 切走时 setSrcdoc('') 释放
