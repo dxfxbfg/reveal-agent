@@ -129,6 +129,64 @@
 8. **性能监控** - 添加 token 使用量统计
 9. ~~**WebSocket 重连退避** - ws.js 简单重连可加指数退避~~ ✅ 2026-06-06
 
+## 迭代 (2026-06-07 cron 5) - 草稿 LRU 限流 + iframe srcdoc 释放
+
+### 完成的工作
+
+**1. 草稿 LRU 限流（中优 #5 续 — 解决长期使用 quota 超限隐患）**
+- 旧问题：每个 task 的草稿按需创建但无清理。50+ task × 5KB = 250KB 累积可能触发 localStorage `QuotaExceededError`
+- 新方案：新建独立模块 `front-react/src/draftStore.js`，集中管理 LRU 逻辑
+  - 索引 `ra_chat_draft_index`：`[{ id, ts }]` 倒序
+  - 上限 20 个 task 的草稿（≈100KB，安全余量）
+  - `save` 时触发淘汰：超上限按 ts 升序移除最老的（连带删草稿本身）
+  - `load` 时 touch 更新 ts（访问即刷新）
+  - `remove(id)` + `cleanupOrphans(orphanIds)` 暴露给 App 调用
+- 集成点：
+  - `ChatPanel.jsx` 改用 `draftStore.load/save`，本地辅助函数变成薄包装
+  - `App.jsx` 启动时扫索引 vs tasks → 删孤儿草稿（`useEffect` 空依赖 mount 一次）
+  - `App.jsx` 的 `deleteTask` 同步调 `draftStore.remove(id)`
+- 边界：
+  - 全部 `try/catch` 包裹，与现有 `config.js` 4MB 兜底风格一致
+  - 索引写入失败也不影响草稿主路径（try/catch 静默）
+
+**2. iframe srcdoc 释放（低优 #3）**
+- 旧问题：切到 ControlPanel 等非 slides workspace 时，preview iframe 仍挂着完整 srcdoc（reveal.js + PDF + 图片），长时间占用几十 MB
+- 新方案：`Preview.jsx` 加 `useEffect` 监听 `active`
+  - `active=false` 时 `ref.current.srcdoc = ''`，release 内存
+  - `active=true` 时 `setRetryNonce(n => n + 1)` 触发上面的注入 effect，自动恢复
+- 边界：
+  - 仅当 `html` 已加载过才清（避免空 html 时无效操作）
+  - 切回时 retryNonce 强制重新注入，不需要外部传 html prop 变化
+
+### Build
+- dist: `index-DG_vAJR7.js` → `index-ywzjOk2L.js`（260.70 → 261.92 KB，+1.22 KB / gzip 76.22 → 76.65 KB，+0.43 KB）
+- dist: CSS hash 不变（80.00 KB）
+- 0 错误，0 警告
+- vite preview 验证：root/js/css 全部 HTTP 200
+
+### GitHub
+- commit: `64ee0ff` - feat: 草稿 LRU 限流 + iframe srcdoc 释放（中优 #5 + 低优 #3）
+- 已 push 到 main：`27d7025..64ee0ff`
+- 6 files changed, 161 insertions(+), 25 deletions(-)
+
+### Vercel
+- **仍然不通**（Vercel ↔ GitHub 集成断开，上次迭代已记录，需用户手动重连）
+- 本次未改 vercel.json，webhook 仍不会触发
+- 本地 vite preview 三个资源 200 OK，等用户重连 Vercel 后会自动部署新 dist
+
+### 累计成果
+- 源码新增：draftStore.js (95 行，集中 LRU 逻辑)
+- 源码组件：15 → 15（无变化）
+- dist CSS 稳定在 80.00 KB（自 6-06 CSS 清理后无变化）
+
+### 下次迭代建议
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作（断一次再连）
+2. **大草稿单条 LRU**（中优）— 当前 LRU 是按 task 数量淘汰；如果某 task 单条草稿 > 50KB 仍可能撑爆，可加单条 size 上限
+3. **Preview 重连时还原幻灯片位置**（低优）— 当前 retryNonce 强制 re-inject 后会回到第 1 张幻灯片，可记录 lastIdx 切回时 r.slide(lastIdx)
+4. **后端 puppeteer 路由彻底删除**（中优）— 现在只标记 deprecated，下次主版本可彻底删除 `/api/export/pdf`
+
+---
+
 *每次迭代只做 1-2 个重点改进，不要贪多*
 
 ---
