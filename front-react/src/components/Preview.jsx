@@ -95,6 +95,24 @@ export default function Preview({ html, active = true }) {
     }
   }, [html, retryNonce]);
 
+  // workspace 切走时释放 iframe 资源（srcdoc 内嵌的 reveal.js + PDF/图片会一直占内存）
+  // 切回时通过 retryNonce 触发上面的 effect 重新注入
+  useEffect(() => {
+    if (active || !html) return;
+    // 不 active 时清空 srcdoc
+    if (ref.current?.srcdoc) ref.current.srcdoc = '';
+    readyRef.current = false;
+    setReady(false);
+    pendingNavRef.current = [];
+  }, [active, html]);
+
+  useEffect(() => {
+    if (!active && html) {
+      // 切回时 force re-inject（如果 html 不变，retryNonce 仍能触发 effect）
+      setRetryNonce(n => n + 1);
+    }
+  }, [active]);  // 仅 active 变化时触发
+
   const sendNav = useCallback((cmd) => {
     const win = ref.current?.contentWindow;
     if (!win) return;

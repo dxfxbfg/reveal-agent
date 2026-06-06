@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useRef, useReducer, useState } from 'react';
 import { initialState, reducer, genId, API_BASE, getCustomApiForModel } from './config.js';
 import { connectWS, on, off } from './ws.js';
+import * as draftStore from './draftStore.js';
 import Sidebar from './components/Sidebar.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import MainPanel from './components/MainPanel.jsx';
@@ -202,7 +203,23 @@ export default function App() {
 
   const switchTask = (id) => dispatch({ type: 'SET_ACTIVE_TASK', id });
   const newTask = () => dispatch({ type: 'ADD_TASK' });
-  const deleteTask = (id) => dispatch({ type: 'DELETE_TASK', id });
+  const deleteTask = (id) => {
+    draftStore.remove(id);  // 同步清掉被删 task 的草稿
+    dispatch({ type: 'DELETE_TASK', id });
+  };
+
+  // 启动时清理孤儿草稿（task 列表里已不存在的 id 直接清掉）
+  // 读 LRU 索引 → 跟当前 task 列表对比 → 多余的全删
+  useEffect(() => {
+    try {
+      const idx = JSON.parse(localStorage.getItem('ra_chat_draft_index') || '[]');
+      const validIds = new Set(tasks.map(t => t.id));
+      const orphans = (Array.isArray(idx) ? idx : [])
+        .map(e => e?.id)
+        .filter(id => typeof id === 'string' && !validIds.has(id));
+      if (orphans.length > 0) draftStore.cleanupOrphans(orphans);
+    } catch {}
+  }, []);  // 只在 mount 跑一次
 
   const selectFile = (fileId) => dispatch({ type: 'SET_CURRENT_FILE', taskId: task.id, fileId });
   const deleteFile = (taskId, fileId) => dispatch({ type: 'DELETE_FILE', taskId, fileId });

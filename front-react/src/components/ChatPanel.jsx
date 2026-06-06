@@ -1,19 +1,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ChatMessages from './ChatMessages.jsx';
 import ToolLogPanel from './ToolLogPanel.jsx';
+import * as draftStore from '../draftStore.js';
 
 // 输入草稿按 taskId 存到 localStorage — 切走/刷新页面后回到当前 task 仍能看到未发送的文字
-// 发送后或丢弃任务时由调用方 saveDraft(task.id, '') 移除 key
-const draftKey = (taskId) => `ra_chat_draft_${taskId}`;
-const loadDraft = (taskId) => {
-  try { return localStorage.getItem(draftKey(taskId)) || ''; } catch { return ''; }
-};
-const saveDraft = (taskId, text) => {
-  try {
-    if (text) localStorage.setItem(draftKey(taskId), text);
-    else localStorage.removeItem(draftKey(taskId));
-  } catch {}
-};
+// 发送后或丢弃任务时由调用方 draftStore.save(task.id, '') 移除 key
+// LRU 上限 20 个 task 的草稿，由 draftStore 内部维护索引和淘汰
+const loadDraft = (taskId) => draftStore.load(taskId);
+const saveDraft = (taskId, text) => draftStore.save(taskId, text);
 
 export default function ChatPanel({
   task, onSend, onStop, onContinue, onDiscard,
