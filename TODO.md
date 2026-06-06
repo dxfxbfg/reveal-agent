@@ -192,6 +192,74 @@
 
 ### 下次迭代建议（按优先级）
 1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
-2. **后端 PDF 导出 → 客户端 html2pdf**（中优 #4）
+2. ~~**后端 PDF 导出 → 客户端 html2pdf**（中优 #4）~~ ✅ 2026-06-06 cron
 3. **ChatPanel 输入边界**（中优 #5）— 大段 markdown 粘贴节流
 4. **workspace 切换状态保留**（中优 #6）
+
+## 迭代 (2026-06-06 cron 2) - PDF 导出迁移客户端 + 修 bug
+
+### 修了什么
+**1. ExportPanel.jsx 严重 bug（中优 #4 顺手收）**
+- 旧代码 line 21/24 引用未定义的 `activeFile`（实际变量是 `file`），导致 `!activeFile?.id` 抛 ReferenceError，被 try/catch 静默吞掉
+- 实际效果：**PDF 导出按钮从代码首次合并起就一直是坏的**，用户点了一直没反应
+- 新代码改用客户端 `window.print()` 方案后，这个问题自然消失
+
+**2. PDF 导出从后端 puppeteer 改为浏览器原生打印（中优 #4 主任务）**
+
+为啥不引入 jspdf/html2pdf：
+- jspdf + html2canvas 打包约 60-90KB
+- 渲染质量不如浏览器原生（中文/字体/Emoji 经常丢）
+- 依赖管理更复杂
+
+最终方案：`window.open` + `document.write(html)` + `window.print()`：
+- 在新标签页打开完整 HTML
+- 等待 reveal.js 加载 + 初始化（800ms 缓冲）
+- 触发浏览器原生 print 对话框
+- 用户选"另存为 PDF" → 系统级 PDF 引擎输出，质量与浏览器一致
+- **bundle 体积 0 增加**
+
+代码片段（ExportPanel.jsx）：
+```js
+const printWindow = window.open('', '_blank');
+if (!printWindow) { alert('请允许弹窗'); return; }
+printWindow.document.open();
+printWindow.document.write(html);
+printWindow.document.close();
+printWindow.addEventListener('load', () => {
+  setTimeout(() => {
+    try { printWindow.focus(); printWindow.print(); }
+    catch (e) { console.error('Print failed:', e); }
+  }, 800);
+});
+```
+
+**3. 后端 `/api/export/pdf` 路由保留 + 标记 deprecated**
+- 加 `Deprecation: true` + `Sunset` 响应头
+- `puppeteer` 缺失时不再抛 unhandled rejection，改为 503 + 明确文案引导到客户端
+- 旧 URL 不会 500，下次主版本可彻底删除
+
+### Build
+- dist: `index-C8wBD33t.js` → `index-CZlTpiu4.js`（256 → 259.38 KB，+3.4KB / gzip 75.89 KB，+0.7KB）
+- dist: CSS hash 不变（80.00 KB）
+- 0 错误，0 警告
+- vite preview 验证：root/js/css 全部 200 OK
+- `node -c backend/index.js`：syntax OK
+
+### 验证清单
+- ✅ ExportPanel 中 `activeFile` undefined 引用消除
+- ✅ 旧 `fetch api/export/pdf` 调用消除（dist 中 grep 0 命中）
+- ✅ `window.print` / `document.write` / `window.open` 各 1 处（dist 中 grep 命中）
+- ✅ 后端路由有兜底，puppeteer 缺失不再 500
+- ✅ Vite build 0 错误 0 警告
+
+### GitHub
+- 待 commit + push（本轮结尾执行）
+
+### Vercel
+- reveal-js-ha8o.vercel.app 持续不通（国内到 Vercel 边缘网络问题）
+- 本次未改 vercel.json，Vercel webhook 会自动重新部署新 dist
+
+### 下次迭代建议
+1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
+2. **ChatPanel 输入边界**（中优 #5）— 大段 markdown 粘贴节流
+3. **workspace 切换状态保留**（中优 #6）

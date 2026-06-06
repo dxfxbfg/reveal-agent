@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { API_BASE } from '../config.js';
+import React from 'react';
 
 export default function ExportPanel({ task }) {
-  const [exporting, setExporting] = useState(false);
   const file = task?.generatedFiles?.find(f => f.id === task.activeFileId);
   const html = file?.versions[file.currentVersionIdx]?.html;
 
@@ -17,24 +15,30 @@ export default function ExportPanel({ task }) {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPdf = async () => {
-    if (!activeFile?.id || !html) return;
-    setExporting(true);
-    try {
-      const resp = await fetch(`${API_BASE}/api/export/pdf/${activeFile.id}`);
-      if (!resp.ok) throw new Error('PDF export failed');
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'presentation.pdf';
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('PDF export failed:', err);
-    } finally {
-      setExporting(false);
+  const handleExportPdf = () => {
+    if (!file?.id || !html) return;
+    // 客户端打印方案：在新窗口打开 HTML，触发浏览器原生 print 对话框
+    // 用户可选"另存为 PDF"。无需后端 puppeteer，无 CORS，无 bundle 体积代价。
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('浏览器拦截了新窗口。请允许弹窗后重试。');
+      return;
     }
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    // 等待 reveal.js / 资源加载完成（reveal 会在 window.onload 之后初始化）
+    printWindow.addEventListener('load', () => {
+      // 给 reveal 一些初始化时间
+      setTimeout(() => {
+        try {
+          printWindow.focus();
+          printWindow.print();
+        } catch (e) {
+          console.error('Print failed:', e);
+        }
+      }, 800);
+    });
   };
 
   const handleCopy = () => {
@@ -64,10 +68,10 @@ export default function ExportPanel({ task }) {
         id="export-pdf"
         className="export-btn"
         onClick={handleExportPdf}
-        disabled={disabled || exporting}
-        title="导出 PDF"
+        disabled={disabled}
+        title="导出 PDF（通过浏览器打印对话框另存为 PDF）"
       >
-        {exporting ? '导出中...' : 'PDF'}
+        PDF
       </button>
       <button
         id="copy-code"

@@ -164,18 +164,31 @@ app.get('/api/export/html/:fileId', (req, res) => {
 });
 
 // 导出 PDF（puppeteer 浏览器池）
+// ⚠️ 已废弃：前端 ExportPanel 自 2026-06-06 起改用浏览器原生 window.print()，
+// 此路由保留仅为兼容旧书签。puppeteer 在小内存机器上不稳定，移除可降低
+// 后端依赖体积（~200MB Chromium）。下个主版本可完全删除。
 let browserInstance = null;
+let puppeteerAvailable = null;
 
 async function getBrowser() {
-  if (!browserInstance || !browserInstance.isConnected()) {
+  if (browserInstance && browserInstance.isConnected()) return browserInstance;
+  if (puppeteerAvailable === false) return null;
+  try {
     const { default: puppeteer } = await import('puppeteer');
     browserInstance = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
     browserInstance.on('disconnected', () => { browserInstance = null; });
+    puppeteerAvailable = true;
+    return browserInstance;
+  } catch (err) {
+    puppeteerAvailable = false;
+    console.warn('[pdf-export] puppeteer not available, route disabled:', err.message);
+    return null;
   }
-  return browserInstance;
 }
 
 app.get('/api/export/pdf/:fileId', async (req, res) => {
+  res.setHeader('Deprecation', 'true');
+  res.setHeader('Sunset', 'See ExportPanel.jsx → use browser print dialog');
   const filePath = path.join(outputDir, `${req.params.fileId}.html`);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'No file found' });
@@ -183,6 +196,11 @@ app.get('/api/export/pdf/:fileId', async (req, res) => {
 
   try {
     const browser = await getBrowser();
+    if (!browser) {
+      return res.status(503).json({
+        error: 'Server-side PDF export is deprecated. Please use the browser\'s print dialog (Cmd/Ctrl+P → Save as PDF) in the export panel.',
+      });
+    }
     const page = await browser.newPage();
     try {
       await page.goto(`file://${filePath}`, { waitUntil: 'networkidle0' });
