@@ -162,7 +162,36 @@
 - reveal-js-ha8o.vercel.app 持续不通（国内到 Vercel 边缘网络问题）
 - 本地 vite preview 三个资源全部 200 OK，Vercel 端 webhook 触发后会自动重新部署
 
+## 迭代 (2026-06-06 cron) - CSS 体积优化（高优 #3 完成）
+
+### 完成的工作
+1. **CSS 死代码扫描** — 写脚本扫 styles.css 387 个类 vs src/ 所有 jsx/js 用法
+   - 精确检测：className="..." / className='...' / 模板字符串字面量 / classList.add/remove
+   - 第一轮：发现 18 个未引用类（之前已删除大部分）
+   - 重新分析：剩下 7 个里 `.INFO/.WARN/.ERROR/.DEBUG` 是 `.log-level.*` 子选择器（`log-level ${entry.level}` 动态拼），保留
+2. **二次清理** — 删掉 3 个真正无用的块：
+   - `@keyframes typingIndicator`（.msg.typing / .dot / .dot:nth-child(2/3)）— AI 输入指示器，源码无引用
+   - `@keyframes toastOut` + `.toast.removing`（Toast.jsx 直接 filter，无 exit 动画）
+3. **构建** — `npm run build` 0 错 0 警告
+   - dist: `index-DuMEGKMv.css` → `index-DR4W856s.css`（80.56 → 80.00 KB / gzip 11.43 → 11.29 KB）
+   - dist: `index-DktXQW4p.js` → `index-C8wBD33t.js`（无功能变化，hash 滚动）
+4. **vite preview 验证** — root/js/css 全部 200 OK
+
+### 累计成果（从 6-05 第一次清理算起）
+- 源码 styles.css: 5324 → 4506 行（-818 行，-15%）
+- dist CSS: 92.02 → 80.00 KB（gzip 12.75 → 11.29 KB，-11%）
+- 删除的类：.icon-btn, .config-toggle, .feedback-toggle, .feedback-label, .modal-subtitle, .preview-nav-btns, .preview-nav-btn, .toast-icon, .shortcut-hint, .shimmer, .animation-mode-tabs, .animation-mode-btn, .animation-input-section, .animation-label, .animation-textarea, .animation-gen-row, .animation-stop-btn, .msg.typing, .dot, .toast.removing, + @keyframes typingIndicator/toastOut
+
+### GitHub
+- commit: `b2d9687` - perf: remove unused CSS blocks (net -797 lines)
+- 已 push 到 main：6312ce8..b2d9687
+
+### Vercel
+- reveal-js-ha8o.vercel.app 持续连接超时（curl exit 28，国内到 Vercel 边缘节点网络问题，非项目 bug）
+- 本次未改 vercel.json
+
 ### 下次迭代建议（按优先级）
 1. **Vercel 部署健康度检查**（高优 #1）— 4 个 production 环境清理
-2. **CSS 体积优化**（高优 #3）— styles.css 92 KB 是否有未使用 workspace 样式
-3. **后端 PDF 导出 → 客户端 html2pdf**（中优 #4）
+2. **后端 PDF 导出 → 客户端 html2pdf**（中优 #4）
+3. **ChatPanel 输入边界**（中优 #5）— 大段 markdown 粘贴节流
+4. **workspace 切换状态保留**（中优 #6）
