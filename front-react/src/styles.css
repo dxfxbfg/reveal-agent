@@ -2190,6 +2190,11 @@ body {
   color: var(--text);
 }
 
+.toast.info {
+  background: linear-gradient(135deg, #4f5bd5, #6b3fa0);
+  color: #fff;
+}
+
 /* ── Scrollbar ───────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

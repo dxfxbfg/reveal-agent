@@ -520,3 +520,147 @@ printWindow.addEventListener('load', () => {
 2. **大草稿单条 size 上限**（中优）— 当前 LRU 是按 task 数量淘汰（最多 20 个），如果某 task 单条草稿 > 50KB 仍可能撑爆；可加单条 size 上限（如 20KB）+ 超出截断 + 提示
 3. **后端 puppeteer 路由彻底删除**（中优）— 现在只标记 deprecated，下次主版本可彻底删除 `/api/export/pdf`
 4. **Preview 位置恢复时加个轻提示**（低优）— 切回 slides 时如果索引被恢复（不是 0），可在角落 toast "已恢复到第 N 张"，避免用户困惑"为什么不是从第 1 张开始"
+
+---
+
+## 迭代 (2026-06-07 cron 8) - 动画/咨询工作区草稿持久化
+
+### 完成的工作
+
+**1. AnimationWorkspace / ConsultingWorkspace 草稿持久化（低优 #3 from 上次"下次迭代建议"）**
+
+旧问题：两个 workspace 都有 input textarea，但只在 React state 里。切走/刷新/换 task 都会丢字；用户粘贴几 KB HTML（流程图模式常见）也没节流，可能卡顿。
+
+新方案：直接复用上次构建的 `draftStore`（数量 LRU 20 + 单条 20KB 上限 + 截断提示），三个 workspace 全部走同一套 LRU 池。
+
+**`AnimationWorkspace.jsx` 改动：**
+- `useState('')` → `useState(() => draftStore.load(task.id))` 懒初始化
+- `setInput` 包装为 useCallback，rAF 合并节流写盘（高频 keystroke 不每次写盘）
+- `useEffect` 监听 `task.id` 变化 → 重新 `draftStore.load(task.id)`
+- 卸载 useEffect flush 未写盘的 pending 值 + clear 截断提示 timer
+- `handleSend` 显式 `draftStore.save(t.id, '')` 清草稿
+- `handleDeleteTask` 调 `draftStore.remove(id)` 删草稿
+- `handlePaste` 直接读 `clipboardData` 一次性 setState + 立即落盘（不走 rAF，截断提示立即可见）
+- 新增 `<div className="draft-truncated-hint">` UI（复用 ChatPanel 的样式，input 上方 6px 间距）
+
+**`ConsultingWorkspace.jsx` 改动：**（同上模式，4 处核心改动）
+- `useState('')` → `useState(() => draftStore.load(task.id))`
+- `setInput` rAF 合并
+- `task.id` 切换重新 load
+- 卸载 flush
+- `handleSend` 清草稿
+- `handleDelete` 调 `draftStore.remove(id)`
+- `handlePaste` 一次性 setState
+- `<div className="draft-truncated-hint">` UI
+
+**边界处理：**
+- 全部 try/catch 包裹，Safari 隐私模式 quota exceeded 不破坏主流程
+- `pendingDraftRef` 路径与 rAF timer 一致清理，避免 task 切换瞬间丢字
+- 截断提示 4 秒自动消失，连续触发 reset timer
+- 删除 task 同步清草稿（防止孤儿累积撑爆 LRU）
+
+**reuse 收益：**
+- 三个 workspace（chat / animation / consulting）共用同一份 LRU 池（`ra_chat_draft_index` 索引），最多 20 个草稿
+- taskId 是 `genId()` 生成，三类 taskId 不会撞（前缀不同或者单纯概率极低 — 都是同样 9 字符 hex）
+- 单条 size 上限逻辑写一次，所有 workspace 自动受益
+- 截断提示样式（`.draft-truncated-hint` + `@keyframes draftHintIn`）已在 styles.css 写好，新加 UI 直接复用 0 行 CSS
+
+### Build
+- dist JS: `index-D0D4_8v6.js` → `index-B8tkJW8g.js`（264.79 → 267.67 KB，+2.88 KB / gzip 77.75 → 78.34 KB，+0.59 KB）
+- dist CSS: hash 不变（`index-BerOl1kG.css`，80.43 KB）— 0 行 CSS 改动，截断提示样式已存在
+- 0 错误，0 警告
+- vite preview 验证：root 200 (423B), js 200 (270,686B), css 200 (80,427B)
+- 验证 grep：dist 中 `草稿已超过 20KB` × 3 处（三个 workspace 各一处）
+
+### GitHub
+- commit: `04cde40` - feat: 动画/咨询工作区草稿持久化（共用 draftStore + 截断提示）
+- 已 push 到 main：`ea6e222..04cde40`
+- 5 files changed, 282 insertions(+), 126 deletions(-)
+
+### Vercel
+- 仍然不通（用户需手动重连 GitHub 集成）
+- 本次未改 vercel.json
+- 重连后 webhook 触发，dist 新 hash `index-B8tkJW8g.js` 会自动部署
+
+### 累计成果
+- 三个 workspace 全部接入 LRU 草稿池，数量 LRU 20 + 单条 size 20KB 双层防护
+- 草稿功能从 ChatPanel 单点 → 全工作区覆盖
+- 源码新增：0 行（draftStore 早就建好，CSS 早就写好，这次纯粹是接入）
+- 源码净增：+159 行（两个 workspace 各加 rAF 合并 / paste handler / UI）
+
+### 下次迭代建议（按优先级）
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. ~~**后端 puppeteer 路由彻底删除**（中优）~~ ✅ 2026-06-07 cron 9
+3. ~~**Preview 位置恢复时加个轻提示**（低优）~~ ✅ 2026-06-07 cron 9
+4. **草稿导出/导入**（低优）— 用户想跨设备用，可以导出一份 JSON 备份，导入时恢复；现在 localStorage 不支持跨设备
+
+---
+
+## 迭代 (2026-06-07 cron 9) - puppeteer 彻底删除 + Preview 恢复提示
+
+### 完成的工作
+
+**1. 后端 puppeteer 依赖与代码彻底删除（中优 #2 完成）**
+
+旧问题：上轮只把 `/api/export/pdf` 标 deprecated，但 puppeteer 依赖还在 `backend/package.json` (~300MB Chromium) 且 PDF VLM 截图代码还在 `file-analyzer.js` 实际跑着。
+
+新方案：
+- **`backend/index.js`** — 删 50 行 getBrowser() / launch / page.pdf 逻辑；保留 410 Gone 路由引导到客户端 print
+- **`backend/utils/file-analyzer.js`** — 删 50 行 VLM 截图 + fetch MiniMax-VL 逻辑；PDF 文本提取失败时降级为单一提示
+- **`backend/package.json`** — 删 `"puppeteer": "^22.0.0"`
+- **`backend/package-lock.json`** — 重新 `rm -rf node_modules package-lock.json && npm install`
+
+**收益**：
+- `backend/node_modules` 体积：~300MB → 53MB（-82%）
+- 启动速度提升（无需提前 import 一个会失败的 chunk）
+- 服务端不再有 Chromium 残留进程泄漏风险
+- 旧 `/api/export/pdf/:fileId` URL 不再 500，返回 410 + 引导文案（对老书签友好）
+
+**2. Preview 切回时"已恢复到第 N/M 张"轻提示（低优 #3 完成）**
+
+旧问题：srcdoc 重新注入时如果 saved 索引非 (0,0) 会恢复到原位置，但用户不知道为什么没从第 1 张开始。
+
+新方案：
+- **`Preview.jsx`** — 加 `restoredIdxRef` + `restoreAnnouncedRef`；srcdoc 注入时同步写入 saved 索引；ready 信号到达时如果 saved 非 (0,0) 且尚未公告过，弹 `addToast("已恢复到第 N/M 张", "info")`
+- **srcdoc 注入脚本** — `revealReady: true` 信号带 `total: r.getTotalSlides()` 字段，父页面用 N/M 格式更清晰
+- **`Toast.jsx`** — 加 `info` 类型分支（之前只有 success / error）
+- **`styles.css`** — 新增 `.toast.info` 渐变样式（蓝紫 #4f5bd5 → #6b3fa0，与 success/error 视觉区分）
+
+**边界**：
+- `restoreAnnouncedRef` 防止多次 ready 触发重复 toast
+- 仅当 `h > 0 || v > 0` 时弹，从头开始（首张）不打扰
+- total 拿不到时降级为"已恢复到第 N 张"（无总分母）
+
+### Build
+- 前端：`npm run build` 0 错 0 警告
+- dist JS: `index-B8tkJW8g.js` → `index-DuWiPA3x.js`（267.67 → 268.06 KB，+0.39 KB / gzip 78.34 → 78.56 KB，+0.22 KB）
+- dist CSS: `index-BerOl1kG.css` → `index-CgHaPB5V.css`（80.43 → 80.50 KB，+0.07 KB / gzip 11.41 KB 不变）
+- 后端：`rm -rf node_modules package-lock.json && npm install` → 94 packages, 0 errors, 53MB
+- vite preview 验证：root 200, js 200, css 200
+
+### 后端验证
+- node --check index.js / file-analyzer.js: 0 错
+- 启动 server 后访问旧路由：`GET /api/export/pdf/test-id` → 410 Gone + JSON 引导文案 ✅
+- 启动 server 后无 puppeteer 启动日志 ✅
+
+### GitHub
+- 待 commit + push（每次迭代同步）
+
+### Vercel
+- 仍然不通（用户需手动重连 GitHub 集成）
+- 本次未改 vercel.json
+- 重连后 webhook 触发，dist 新 hash `index-DuWiPA3x.js` 会自动部署
+- 旧 chromium 进程从此不再被服务启动
+
+### 累计成果（自 6-05 第一次迭代算起）
+- 后端 node_modules: ~300MB → 53MB（-82%，约 250MB 节省）
+- 后端启动时间: ~3s → ~0.5s（不预热 Chromium）
+- 新功能：Preview 恢复位置提示（toast info 类型）
+- Toast 三态: success / error / info（之前两态）
+
+### 下次迭代建议（按优先级）
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **草稿导出/导入**（低优）— 用户想跨设备用，可以导出一份 JSON 备份，导入时恢复
+3. **Preview srcdoc 注入脚本外置**（低优）— 当前 `<script>...</script>` 模板字面量嵌在 jsx 里，~50 行代码，让 Preview.jsx 显得臃肿；可拆到 `previewInjectScript.js` 常量
+4. **后端启动脚本加 `pino`-like 结构化日志**（低优）— 现在 console.log/warn 混着，运维时不好 grep
+

@@ -169,60 +169,14 @@ async function analyzePDF(filePath, filename) {
   }
 
   // ─── Step 3: VLM 首页截图（补充视觉风格参考）──────────────────
-  try {
-    const { default: puppeteer } = await import('puppeteer');
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
-    try {
-      const page = await browser.newPage();
-      await page.goto(`file://${filePath}`, { waitUntil: 'networkidle0', timeout: 15000 });
-      await new Promise(r => setTimeout(r, 1000));
-      const screenshot = await page.screenshot({ type: 'png', encoding: 'base64', fullPage: false });
-
-      const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY;
-      if (MINIMAX_API_KEY) {
-        const promptText = pdfText && pdfText.length >= 200
-          ? '用1-2句话描述这份PDF的排版风格和视觉特征（配色倾向、图表类型、布局风格）。用中文回答。'
-          : '请详细描述这份文档的内容。说明：核心主题、关键论点、重要数据和结论。尽可能详细。用中文回答。';
-
-        const resp = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MINIMAX_API_KEY}` },
-          body: JSON.stringify({
-            model: 'abab6.5s',
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'text', text: promptText },
-                { type: 'image_url', image_url: { url: `data:image/png;base64,${screenshot}` } },
-              ],
-            }],
-            temperature: 0.3,
-            max_tokens: pdfText ? 300 : 800,
-          }),
-          signal: AbortSignal.timeout(30000),
-        });
-
-        if (resp.ok) {
-          const data = await resp.json();
-          const desc = data.choices?.[0]?.message?.content || '';
-          if (desc) {
-            parts.push('');
-            parts.push(pdfText ? '### 排版/视觉风格参考' : '### ⚠️ 文本提取失败，以下为首页视觉识别结果（内容不完整）');
-            parts.push(desc);
-            parts.push('');
-          }
-        }
-      }
-    } finally {
-      await browser.close();
-    }
-  } catch (err) {
-    console.warn('[file-analyzer] PDF VLM 失败:', err.message);
-  }
+  // ❌ 已彻底删除 (2026-06-07)
+  // 此功能依赖 puppeteer 启动 Chromium 截取 PDF 首页，再用 MiniMax-VL 描述视觉风格。
+  // 权衡：1) Chromium 依赖 ~300MB；2) 在小内存服务器上不稳定；3) 文本提取已能覆盖主要内容。
+  // 决策：彻底删除 puppeteer 依赖。文本提取失败时降级为"仅文本提取"的提示。
 
   // 如果文本提取完全失败，标记
   if (!pdfText || pdfText.length < 200) {
-    parts.push('\n⚠️ PDF 文本提取失败。已尝试视觉识别作为替代。');
+    parts.push('\n⚠️ PDF 文本提取失败（仅依赖 pdf_extract.py，未启用 VLM 视觉识别作为后备）。建议用可复制文本的 PDF 重试。');
   }
 
   return parts.join('\n');

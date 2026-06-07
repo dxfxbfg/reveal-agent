@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { addToast } from './Toast.jsx';
 
 // 幻灯片索引持久化 — 切到 ControlPanel 再切回,或 srcdoc 重新注入时,保留当前位置
 // localStorage key: ra_preview_slide_idx_<taskId> = "h,v"
@@ -38,6 +39,16 @@ export default function Preview({ html, active = true, taskId }) {
   const [loadError, setLoadError] = useState(null);
   const [retryNonce, setRetryNonce] = useState(0);
 
+  // 每次 srcdoc 重新注入时,记录"是否真的恢复了非 (0,0) 位置"
+  // 配合下面的 onMessage revealReady 回调,在就绪瞬间弹 toast
+  const restoredIdxRef = useRef(null);
+  const restoreAnnouncedRef = useRef(false);
+
+  // 每次 html / taskId / retryNonce 变化 → 重新注入时,先把"待恢复索引"记下来
+  // html 变化（task 切换 / 新生成）时,默认不恢复旧 task 的位置
+  // 同一个 html 重新注入（切回 workspace）时,恢复上次记录的索引
+  // (此 effect 在下面的"注入 effect"内调用,这里只是占位,实际写在注入 effect 里)
+
   // 监听 iframe 内的 ready / error / 索引上报信号
   useEffect(() => {
     function onMessage(e) {
@@ -50,6 +61,18 @@ export default function Preview({ html, active = true, taskId }) {
         const queue = pendingNavRef.current;
         pendingNavRef.current = [];
         queue.forEach((cmd) => sendNav(cmd));
+        // 恢复提示：仅在本次 srcdoc 注入的 ready 瞬间,且确实恢复了非 (0,0) 位置时弹一次
+        if (!restoreAnnouncedRef.current && restoredIdxRef.current) {
+          const { h, v } = restoredIdxRef.current;
+          if (h > 0 || v > 0) {
+            const total = (typeof e.data.total === 'number' && e.data.total > 0) ? e.data.total : null;
+            const msg = total
+              ? `已恢复到第 ${h + 1}/${total} 张幻灯片`
+              : `已恢复到第 ${h + 1} 张幻灯片`;
+            addToast(msg, 'info');
+          }
+          restoreAnnouncedRef.current = true;
+        }
       } else if (e.data.revealReady === false) {
         // srcdoc 内的 Reveal 加载失败（CDN 慢 / 不可达）
         readyRef.current = false;
@@ -83,6 +106,9 @@ export default function Preview({ html, active = true, taskId }) {
       // 同一个 html 重新注入（切回 workspace）时,恢复上次记录的索引
       const saved = loadSavedIdx(taskId);
       pendingRestoreRef.current = saved;
+      // 同步写入 restoredIdxRef,ready 回调里用它判断是否要弹 toast
+      restoredIdxRef.current = saved;
+      restoreAnnouncedRef.current = false;
 
       const restoreH = saved ? String(saved.h) : '0';
       const restoreV = saved ? String(saved.v) : '0';
@@ -158,8 +184,8 @@ export default function Preview({ html, active = true, taskId }) {
                 // 旧版 reveal 没有 on(),setTimeout 兜底
                 setTimeout(tryRestore, 200);
               }
-              // 通知父页面：已就绪
-              try { parent.postMessage({ revealReady: true }, '*'); } catch(e){}
+              // 通知父页面：已就绪（带总张数便于"已恢复到第 N/M 张"提示）
+              try { parent.postMessage({ revealReady: true, total: (typeof r.getTotalSlides === 'function') ? r.getTotalSlides() : 0 }, '*'); } catch(e){}
             }
             setup();
           })();
