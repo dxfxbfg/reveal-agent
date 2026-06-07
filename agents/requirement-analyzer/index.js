@@ -3,6 +3,9 @@ import { initAgentContext } from '../../backend/utils/agent-context.js';
 import { MINIMAX_MODELS } from '../../backend/utils/ai-client.js';
 import { parseLLMJson } from '../../backend/utils/parse-llm-json.js';
 import { analyzeFiles } from '../../backend/utils/file-analyzer.js';
+import { logger } from '../../backend/utils/logger.js';
+
+const log = logger.child('requirement-analyzer');
 
 const FALLBACK = {
   summary: '未提供摘要',
@@ -21,7 +24,7 @@ const FALLBACK = {
 export async function run({ message, history = [], currentHtml = '', files = [], modelConfig = null }) {
   // ─── 步骤 0: 模式选择 ──────────────────────────────────
   const mode = await detectMode(message, modelConfig);
-  console.log('[requirement-analyzer] mode selected:', mode);
+  log.debug('mode selected', { mode });
 
   if (mode === 'pm-requirement') {
     return runPMRequirementMode({ message, history, currentHtml, files, modelConfig });

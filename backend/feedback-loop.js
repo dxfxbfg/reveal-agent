@@ -8,7 +8,9 @@
  */
 
 import { MINIMAX_MODELS } from './utils/ai-client.js';
+import { logger } from './utils/logger.js';
 
+const log = logger.child('feedback-loop');
 const MAX_FIX_ITERATIONS = 2;
 
 // 结构化检查项
@@ -135,12 +137,12 @@ export async function runFeedbackLoop({ sessionId, html, userMessage, qualityTie
     }
 
     if (evaluation.passed) {
-      console.log(`[feedback:v3] 通过 (round ${i + 1}, score: ${(evaluation.score * 100).toFixed(0)}%)`);
+      log.info('通过', { round: i + 1, score: `${(evaluation.score * 100).toFixed(0)}%` });
       return { html: currentHtml, evaluation, history, fixed: i > 0 };
     }
 
     if (!fixHandler) {
-      console.log(`[feedback:v3] 评分 ${(evaluation.score * 100).toFixed(0)}% 低于阈值，但无修复处理器`);
+      log.info('评分低于阈值，但无修复处理器', { score: `${(evaluation.score * 100).toFixed(0)}%` });
       return { html: currentHtml, evaluation, history, fixed: false };
     }
 
@@ -155,13 +157,13 @@ export async function runFeedbackLoop({ sessionId, html, userMessage, qualityTie
       '直接输出完整修改后的 HTML。',
     ].join('\n');
 
-    console.log(`[feedback:v3] 第 ${i + 1} 轮修复 (score: ${(evaluation.score * 100).toFixed(0)}%)`);
-    console.log(`[feedback:v3] 问题:`, evaluation.issues?.join(', '));
+    log.info('修复 round', { round: i + 1, score: `${(evaluation.score * 100).toFixed(0)}%` });
+    log.info('问题', { issues: evaluation.issues?.join(', ') });
 
     try {
       currentHtml = await fixHandler({ html: currentHtml, instruction: fixInstruction });
     } catch (err) {
-      console.warn('[feedback:v3] 修复失败:', err.message);
+      log.warn('修复失败', { error: err.message });
       break;
     }
   }

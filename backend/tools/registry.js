@@ -4,6 +4,10 @@
  * 注册工具 → Agent 声明所需工具 → Engine 调度执行
  */
 
+import { logger } from '../utils/logger.js';
+
+const log = logger.child('tools:registry');
+
 class ToolRegistry {
   constructor() {
     this.tools = new Map();
@@ -11,10 +15,10 @@ class ToolRegistry {
 
   register(definition, handler) {
     if (this.tools.has(definition.name)) {
-      console.warn(`[registry] 覆盖已注册工具: ${definition.name}`);
+      log.warn('覆盖已注册工具', { name: definition.name });
     }
     this.tools.set(definition.name, { definition, handler });
-    console.log(`[registry] 注册工具: ${definition.name}`);
+    log.info('注册工具', { name: definition.name });
   }
 
   getDefinitions(names = null) {

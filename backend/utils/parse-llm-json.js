@@ -1,3 +1,7 @@
+import { logger } from './logger.js';
+
+const log = logger.child('parse-llm-json');
+
 export function parseLLMJson(raw, fallback = {}) {
   try {
     let jsonStr = raw;
@@ -17,7 +21,7 @@ export function parseLLMJson(raw, fallback = {}) {
 
     return JSON.parse(jsonStr.trim());
   } catch (err) {
-    console.warn('[parseLLMJson] JSON parse failed, using fallback:', err.message);
+    log.warn('JSON parse failed, using fallback', { error: err.message });
     return fallback;
   }
 }

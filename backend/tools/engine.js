@@ -11,7 +11,9 @@
 import { callLLMWithTools, callLLM } from '../utils/llm-client.js';
 import { MINIMAX_MODELS } from '../utils/ai-client.js';
 import { registry } from './registry.js';
+import { logger } from '../utils/logger.js';
 
+const log = logger.child('tools:engine');
 const DEFAULT_MAX_ITERATIONS = 6;
 
 export async function runAgentWithTools({
@@ -55,7 +57,7 @@ export async function runAgentWithTools({
           args = {};
         }
 
-        console.log(`[engine] tool_call #${i}: ${tc.function.name}`);
+        log.info('tool_call', { iteration: i, name: tc.function.name });
 
         let result;
         try {

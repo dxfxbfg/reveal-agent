@@ -15,7 +15,9 @@ import { MINIMAX_MODELS } from '../../backend/utils/ai-client.js';
 import { parseLLMJson } from '../../backend/utils/parse-llm-json.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { logger } from '../../backend/utils/logger.js';
 
+const log = logger.child('data-analytics');
 const execFileAsync = promisify(execFile);
 
 function isDataFile(filename) {
@@ -120,7 +122,7 @@ export async function getDataAnalyticsContext(files = [], modelConfig = null) {
   const dataFiles = files.filter(f => isDataFile(f.filename || ''));
   if (dataFiles.length === 0) return null;
 
-  console.log(`[data-analytics] 分析 ${dataFiles.length} 个数据文件`);
+  log.info('analyzing data files', { count: dataFiles.length });
 
   // Step 1: Read all data files
   const schemas = [];

@@ -13,6 +13,9 @@
 import { callLLM } from '../../backend/utils/llm-client.js';
 import { initAgentContext } from '../../backend/utils/agent-context.js';
 import { MINIMAX_MODELS } from '../../backend/utils/ai-client.js';
+import { logger } from '../../backend/utils/logger.js';
+
+const log = logger.child('code-generator');
 
 // ─── 主入口 ─────────────────────────────────────────────────
 export async function run({ synthesis, visualPlan, collectedInfo = '', maxTokens = 32000, modifyHtml = '', modifyInstruction = '', modelConfig = null, pageCount = 10 }) {
@@ -572,15 +575,14 @@ ${trimmedHtml}
       }
     }
 
-    if (failedSearches.length > 0) {
-      console.warn('[code-generator:diff] Failed searches:');
-      failedSearches.forEach(s => console.warn('  -', s));
-    }
+    if (failedSearches.length >0) {
+ log.warn('Failed searches', { failed: failedSearches });
+ }
 
-    if (appliedCount > 0) {
-      console.log(`[code-generator:diff] Applied ${appliedCount}/${blocks.length} blocks (${failedSearches.length} failed)`);
-      return modifiedHtml;
-    }
+ if (appliedCount >0) {
+ log.info('diff applied', { applied: appliedCount, total: blocks.length, failed: failedSearches.length });
+ return modifiedHtml;
+ }
   }
 
   // Fallback

@@ -13,8 +13,12 @@ import { initTools } from './tools/definitions/index.js';
 import { run as runAnimationPPT } from '../agents/animation-ppt/index.js';
 import { run as runAnimationFlowchart } from '../agents/animation-flowchart/index.js';
 import { run as runConsultingHTML, runChat as runConsultingChat } from '../agents/consulting-html/index.js';
+import { logger, printLoggerBanner } from './utils/logger.js';
 
 dotenv.config();
+printLoggerBanner();
+
+const log = logger.child('server');
 
 function genId() {
   return Math.random().toString(36).slice(2, 10);
@@ -30,7 +34,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 const reactDistDir = path.join(__dirname, '..', 'front-react', 'dist');
 app.use(express.static(reactDistDir));
-console.log('[server] 使用 React 前端 (front-react/dist/)');
+log.info('使用 React 前端', { distDir: reactDistDir });
 
 app.get('/', (_, res) => {
   res.sendFile(path.join(reactDistDir, 'index.html'));
@@ -121,7 +125,7 @@ app.post('/api/generate', async (req, res) => {
     broadcast(sessionId, { type: 'done', html: result.html, fileId });
     saveHtml(fileId, result.html);
   } catch (err) {
-    console.error('[pipeline error]', err);
+    log.error('pipeline error', err, { sessionId });
     broadcast(sessionId, { type: 'error', message: err.message });
   }
 });
@@ -199,11 +203,11 @@ app.post('/api/generate-animation-ppt', async (req, res) => {
 
     const filePath = path.join(animationOutputDir, `${sessionId}_ppt.html`);
     fs.writeFileSync(filePath, html, 'utf-8');
-    console.log('[animation-ppt] Saved to', filePath);
+    log.info('animation-ppt saved', { sessionId, filePath });
 
     broadcast(sessionId, { type: 'done', html });
   } catch (err) {
-    console.error('[animation-ppt error]', err);
+    log.error('animation-ppt error', err, { sessionId });
     broadcast(sessionId, { type: 'error', message: err.message });
   }
 });
@@ -228,11 +232,11 @@ app.post('/api/generate-animation-flowchart', async (req, res) => {
 
     const filePath = path.join(animationOutputDir, `${sessionId}_flowchart.html`);
     fs.writeFileSync(filePath, resultHtml, 'utf-8');
-    console.log('[animation-flowchart] Saved to', filePath);
+    log.info('animation-flowchart saved', { sessionId, filePath });
 
     broadcast(sessionId, { type: 'done', html: resultHtml });
   } catch (err) {
-    console.error('[animation-flowchart error]', err);
+    log.error('animation-flowchart error', err, { sessionId });
     broadcast(sessionId, { type: 'error', message: err.message });
   }
 });
@@ -267,7 +271,7 @@ app.post('/api/consulting-chat', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error('[consulting-chat error]', err);
+    log.error('consulting-chat error', err, { sessionId });
     res.status(500).json({ error: err.message });
   }
 });
@@ -292,11 +296,11 @@ app.post('/api/generate-consulting-html', async (req, res) => {
 
     const filePath = path.join(consultingOutputDir, `${sessionId}.html`);
     fs.writeFileSync(filePath, html, 'utf-8');
-    console.log('[consulting-html] Saved to', filePath);
+    log.info('consulting-html saved', { sessionId, filePath });
 
     broadcast(sessionId, { type: 'done', html });
   } catch (err) {
-    console.error('[consulting-html error]', err);
+    log.error('consulting-html error', err, { sessionId });
     broadcast(sessionId, { type: 'error', message: err.message });
   }
 });
@@ -304,8 +308,7 @@ app.post('/api/generate-consulting-html', async (req, res) => {
 // ─── 启动 ─────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`reveal-agent backend running on http://localhost:${PORT}`);
-  console.log(`WebSocket: ws://localhost:${PORT}/ws?session=***`);
+  log.info('backend running', { port: PORT, http: `http://localhost:${PORT}`, ws: `ws://localhost:${PORT}/ws?session=***` });
   initTools();
-  console.log('[init] Tools initialized');
+  log.info('tools initialized');
 });

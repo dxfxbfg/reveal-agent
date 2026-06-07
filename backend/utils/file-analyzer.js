@@ -13,6 +13,9 @@
 import { readFileSync, statSync } from 'fs';
 import { extname, basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from './logger.js';
+
+const log = logger.child('file-analyzer');
 
 const IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
 const CODE_EXTS = ['.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.c', '.cpp', '.h', '.hpp',
@@ -115,7 +118,7 @@ async function analyzePDF(filePath, filename) {
     });
 
     if (result.stderr) {
-      console.warn('[file-analyzer] Python stderr:', result.stderr.slice(0, 500));
+      log.warn('Python stderr', { stderr: result.stderr.slice(0, 500) });
     }
 
     // 解析 JSON，容忍 stdout 中可能夹带的非 JSON 前缀
@@ -125,17 +128,17 @@ async function analyzePDF(filePath, filename) {
     if (jsonStart >= 0) {
       extracted = JSON.parse(raw.slice(jsonStart));
     } else {
-      console.warn('[file-analyzer] Python stdout 中未找到 JSON，原始输出:', raw.slice(0, 500));
+      log.warn('Python stdout 中未找到 JSON', { raw: raw.slice(0, 500) });
     }
   } catch (err) {
-    console.warn('[file-analyzer] PDF 文本提取失败:', err.message);
-    if (err.stdout) console.warn('[file-analyzer] Python stdout:', String(err.stdout).slice(0, 500));
-    if (err.stderr) console.warn('[file-analyzer] Python stderr:', String(err.stderr).slice(0, 500));
+    log.warn('PDF 文本提取失败', { error: err.message });
+    if (err.stdout) log.warn('Python stdout (in err)', { stdout: String(err.stdout).slice(0, 500) });
+    if (err.stderr) log.warn('Python stderr (in err)', { stderr: String(err.stderr).slice(0, 500) });
   }
 
   // 检查提取是否成功
   if (extracted?.error) {
-    console.warn('[file-analyzer] Python 脚本返回错误:', extracted.error);
+    log.warn('Python 脚本返回错误', { error: extracted.error });
     extracted = null;
   }
 

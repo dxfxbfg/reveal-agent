@@ -21,32 +21,34 @@ import { run as runInfoCollector } from '../agents/info-collector/index.js';
 import { run as runSlideGenerator } from '../agents/code-generator/index.js';
 import { initTools } from './tools/definitions/index.js';
 import { runFeedbackLoop } from './feedback-loop.js';
+import { logger } from './utils/logger.js';
 
 // ─── Data Analytics ─────────────────────────────────────────
 import { getDataAnalyticsContext } from '../agents/data-analytics/index.js';
+
+const log = logger.child('pipeline');
 
 export async function runPipeline({ sessionId, message, history = [], files = [], qualityTier = 'normal', currentHtml = '', modelConfig = null, broadcast = null, pageCount = 10, enableFeedback = true }) {
   // 自适应页数：传 0 表示让 AI 自己判断
   const autoPage = pageCount === 0;
   if (autoPage) pageCount = 10;
-
-  console.log(`[pipeline:v3] session=${sessionId}  quality=${qualityTier}  pageCount=${pageCount}${autoPage ? ' (auto)' : ''}  feedback=${enableFeedback}`);
+  log.info('start', { sessionId, quality: qualityTier, pageCount, autoPage, feedback: enableFeedback });
 
   if (broadcast) broadcast({ type: 'agent_step', step: 'init', message: '初始化...' });
 
   initTools();
 
   const config = resolveConfig(qualityTier);
-  console.log(`[pipeline:v3] config:`, config);
+  log.debug('config resolved', { config });
 
   // ─── Stage 1: 研究阶段 ────────────────────────────────────
   // Agent 1: 需求分析（判断 new/modify + 模式检测）
   let analyzerResult = null;
   if (config.agents.includes('requirement-analyzer')) {
-    console.log('[pipeline:v3:1] requirement-analyzer');
+    log.info('stage 1: requirement-analyzer');
     if (broadcast) broadcast({ type: 'agent_step', step: 'requirement-analyzer', message: '分析需求...' });
     analyzerResult = await runRequirementAnalyzer({ message, history, currentHtml, files, modelConfig });
-    console.log('[pipeline:v3:1] done, action=', analyzerResult.action, 'mode=', analyzerResult.mode);
+    log.info('stage 1 done', { action: analyzerResult.action, mode: analyzerResult.mode });
   } else {
     analyzerResult = {
       action: currentHtml && currentHtml.includes('<section') ? 'modify' : 'new',
@@ -65,7 +67,7 @@ export async function runPipeline({ sessionId, message, history = [], files = []
   // ─── Agent 2: 资料收集（由需求分析 agent 决定是否需要网络搜索）───
   let collectedInfo = null;
   if (config.agents.includes('info-collector') && analyzerResult.needsWebSearch) {
-    console.log('[pipeline:v3:2] info-collector (web search needed)');
+    log.info('stage 2: info-collector (web search needed)');
     if (broadcast) broadcast({ type: 'agent_step', step: 'info-collector', message: '收集资料...' });
     collectedInfo = await runInfoCollector({
       requirements: analyzerResult.summary,
@@ -74,7 +76,7 @@ export async function runPipeline({ sessionId, message, history = [], files = []
       broadcast,
       modelConfig,
     });
-    console.log('[pipeline:v3:2] done, sources=', collectedInfo.sources?.length || 0);
+    log.info('stage 2 done', { sources: collectedInfo.sources?.length || 0 });
   } else {
     collectedInfo = { sources: [], fileInsights: '', webInsights: '', knowledgeInsights: '' };
   }
@@ -82,15 +84,15 @@ export async function runPipeline({ sessionId, message, history = [], files = []
   // ─── Data Analytics（CSV/XLSX 数据分析）───
   let dataAnalytics = null;
   if (files && files.some(f => /\.(csv|xlsx?)$/i.test(f.filename || ''))) {
-    console.log('[pipeline:v3:data] running data analytics');
+    log.info('data-analytics: running');
     if (broadcast) broadcast({ type: 'agent_step', step: 'data-analytics', message: '分析数据文件...' });
     dataAnalytics = await getDataAnalyticsContext(files, modelConfig);
-    console.log('[pipeline:v3:data] done, tables=', dataAnalytics?.tables?.length || 0, 'charts=', dataAnalytics?.charts?.length || 0);
+    log.info('data-analytics done', { tables: dataAnalytics?.tables?.length || 0, charts: dataAnalytics?.charts?.length || 0 });
   }
 
   // ─── Stage 2: 生成阶段 ────────────────────────────────────
   // 一次性传入全部上下文，让 LLM 自主完成结构规划+视觉设计+代码生成
-  console.log('[pipeline:v3:3] slide-generator');
+  log.info('stage 3: slide-generator');
   if (broadcast) broadcast({ type: 'agent_step', step: 'slide-generator', message: '生成幻灯片...' });
 
   const context = buildGenerationContext({ analyzerResult, collectedInfo, dataAnalytics, pageCount, autoPage, files, message });
@@ -103,7 +105,7 @@ export async function runPipeline({ sessionId, message, history = [], files = []
     modelConfig,
     pageCount,
   });
-  console.log(`[pipeline:v3:3] done, html length=`, html.length);
+  log.info('stage 3 done', { htmlLength: html.length });
 
   // 结构化校验（不调 LLM，纯规则检查）
   html = validateHTML(html, pageCount);
@@ -139,7 +141,7 @@ export async function runPipeline({ sessionId, message, history = [], files = []
 
 // ─── 修改模式（保持不变）────────────────────────────────────
 async function runModifyMode({ sessionId, message, currentHtml, config, modelConfig, broadcast, analyzerResult, pageCount = 10, enableFeedback = true }) {
-  console.log('[pipeline:v3] action=modify');
+  log.info('modify mode');
 
   if (broadcast) broadcast({ type: 'agent_step', step: 'slide-generator', message: '修改幻灯片...' });
 
@@ -153,7 +155,7 @@ async function runModifyMode({ sessionId, message, currentHtml, config, modelCon
     modelConfig,
     pageCount,
   });
-  console.log('[pipeline:v3] modify done, html length=', html.length);
+  log.info('modify done', { htmlLength: html.length });
 
   html = validateHTML(html, pageCount);
 
@@ -306,18 +308,18 @@ function validateHTML(html, pageCount) {
   }
 
   if (errors.length === 0) {
-    console.log('[pipeline:validate] PASS');
+    log.info('validate: PASS');
     return html;
   }
 
-  console.log('[pipeline:validate] 警告（不阻塞，前端渲染可能降级）:', errors.join(', '));
-  
+  log.warn('validate: 警告（不阻塞，前端渲染可能降级）', { errors: errors.join(', ') });
+
   // 不调 LLM 修复 — 让前端 iframe 尽力渲染
   // 如果确实缺 Reveal.initialize，补一个最小的
   if (!html.includes('Reveal.initialize') && html.includes('</body>')) {
-    html = html.replace('</body>', 
+    html = html.replace('</body>',
       `<script>Reveal.initialize({hash:true,transition:'slide'});</script>\n</body>`);
-    console.log('[pipeline:validate] 已补充最小 Reveal.initialize');
+    log.info('validate: 已补充最小 Reveal.initialize');
   }
 
   return html;
@@ -329,5 +331,5 @@ function saveHtml(sessionId, html) {
   const outputPath = path.join(outputDir, `${sessionId}.html`);
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(outputPath, html, 'utf-8');
-  console.log(`[pipeline] Saved to ${outputPath}`);
+  log.info('saved', { sessionId, outputPath });
 }

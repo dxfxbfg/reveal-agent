@@ -1,5 +1,8 @@
 import { registerWebSearchTool } from './web-search.js';
 import { registerWebScrapeTool } from './web-scrape.js';
+import { logger } from '../../utils/logger.js';
+
+const log = logger.child('tools:init');
 
 let initialized = false;
 
@@ -8,5 +11,5 @@ export function initTools() {
   registerWebSearchTool();
   registerWebScrapeTool();
   initialized = true;
-  console.log('[tools] registered: web_search, web_scrape');
+  log.info('registered', { tools: ['web_search', 'web_scrape'] });
 }

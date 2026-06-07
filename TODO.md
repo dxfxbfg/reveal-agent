@@ -770,3 +770,69 @@ printWindow.addEventListener('load', () => {
 2. **后端启动脚本加 `pino`-like 结构化日志**（低优）— 现在 12 处 console.log/error 混着，运维时不好 grep
 3. **Preview srcdoc 注入脚本加单元测试**（低优）— previewInjectScript.js 拆出来后一直没单测覆盖 buildPreviewScript 边界（NaN/负数/非整数）
 4. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage
+
+---
+
+## 迭代 (2026-06-08 cron 13) - logger 迁移收尾 + 自检脚本
+
+### 完成的工作
+
+**1. 收尾 cron 12 未提交的 11 文件 console → logger 迁移（补 commit）**
+
+cron 12 之前已经把 backend/ (8 文件) + agents/ (3 文件) 全部从 `console.log/error/warn` 迁移到 `logger.child(tag).info/error/warn`，但因为当时超出 tool 迭代预算没来得及 commit + push。这次先收尾。
+
+**Bug 修复（cron 12 自身格式 bug）**：`agents/requirement-analyzer/index.js:27` 之前迁移时漏掉 1 个空格缩进（其他行都是 2 空格缩进，这一行 0 空格），不影响功能但破坏代码风格一致性。已 patch 为 2 空格。
+
+**验证**：
+- `node --check` 11 文件全部 0 错
+- backend 启动期 logger 输出实测（8 行）：
+  ```
+  logger: format=plain minLevel=info
+  2026-06-07T21:09:16.440Z INFO  [server] 使用 React 前端 distDir=/Users/mac/Desktop/...
+  2026-06-07T21:09:16.453Z INFO  [server] backend running port=3001 http=... ws=...
+  2026-06-07T21:09:16.453Z INFO  [tools:registry] 注册工具 name=web_search
+  2026-06-07T21:09:16.453Z INFO  [tools:registry] 注册工具 name=web_scrape
+  2026-06-07T21:09:16.453Z INFO  [tools:init] registered tools=["web_search","web_scrape"]
+  2026-06-07T21:09:16.453Z INFO  [server] tools initialized
+  ```
+- 5 个级别 + JSON 模式 + ctx 字段防护（ctx.level 不能覆盖 logger 内置 level）+ Error 展平 + 子 tag 嵌套（`tools:registry` / `tools:init`） 全部行为正确
+
+**2. 新增 logger 自检脚本 `backend/scripts/test-logger.mjs`**
+
+`scripts/` 目录之前被项目迁移清空了（与 cron 12 之前清 Desktop 事件相关），借这次迭代重建。脚本 0 依赖（不引 vitest / jest），用 `node` 原生 `assert` 做断言，运维改完 logger 直接 `node backend/scripts/test-logger.mjs` 验证。
+
+覆盖 8 个核心场景：
+1. 子 tag 输出（`logger.child('test')` → `[test]`）
+2. 嵌套子 tag（`child('a').child('b')` → `[a:b]`）
+3. LOG_LEVEL 过滤（debug 级别默认被丢弃）
+4. JSON 模式输出单行合法 JSON
+5. **ctx 字段防护**：`{level: 999, tier: 'd1'}` → `level` 不被覆盖，`tier` 保留
+6. Error 对象自动展平 `{name, message, stack}` 进 ctx.error
+7. printLoggerBanner 输出包含 `format` / `minLevel` 字段
+8. 不同级别（info/warn/error/fatal）走对应 stream（stdout/stderr）
+
+### Build
+- 后端：0 build 步骤（Node 直跑），node --check 全过
+- 前端：未改动
+- 启动 server 实测：HTTP 200 + 410 Gone 路由（PDF export 已废弃） + logger 8 行结构化输出
+
+### GitHub
+- commit: <本轮会写入>
+- 已 push 到 main（如果有新 commit）
+
+### Vercel
+- 仍然不通：5 个 production 环境全部卡在 `f2cdcdb`（2026-05-30 初始 commit，10 天前的版本）
+- 需用户手动在 Vercel dashboard → Project Settings → Git → 重新连接 GitHub
+- 本次未改 vercel.json / front-react/src → 触发重连后 webhook 会重新部署最新 dist
+
+### 累计成果（自 6-05 第一次迭代算起）
+- backend/ 18 处 console → 0（agents/ 也 0）
+- logger 5 级别 + 2 模式 + child tag + ctx 防护 + Error 展平
+- scripts/ 目录重建（test-logger.mjs 是重建后第一个文件）
+- logger 行为有自检覆盖，下次改 logger 跑 `node backend/scripts/test-logger.mjs` 立即验证
+
+### 下次迭代建议（按优先级）
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **logger 自检脚本扩展**（低优）— 当前 8 个场景只覆盖核心，可加：JSON 模式 + ctx level 防护的"实际生产场景"、递归 ctx 防护、child('a').child('b').child('c') 三层嵌套、ctx 含 undefined 值
+3. **Preview srcdoc 注入脚本加单测**（低优）— previewInjectScript.js 拆出来后一直没单测覆盖 buildPreviewScript 边界（NaN/负数/非整数）；可以参考 test-logger.mjs 模板写 test-preview-inject.mjs
+4. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage
