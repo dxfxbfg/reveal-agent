@@ -817,8 +817,9 @@ cron 12 之前已经把 backend/ (8 文件) + agents/ (3 文件) 全部从 `cons
 - 启动 server 实测：HTTP 200 + 410 Gone 路由（PDF export 已废弃） + logger 8 行结构化输出
 
 ### GitHub
-- commit: <本轮会写入>
-- 已 push 到 main（如果有新 commit）
+- commit: `93f7202` - feat: backend structured logger + self-test script
+- 已 push 到 main：`17b7a95..93f7202`
+- 14 files changed, 508 insertions(+), 57 deletions(-)
 
 ### Vercel
 - 仍然不通：5 个 production 环境全部卡在 `f2cdcdb`（2026-05-30 初始 commit，10 天前的版本）
