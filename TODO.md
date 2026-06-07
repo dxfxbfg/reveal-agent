@@ -837,3 +837,76 @@ cron 12 之前已经把 backend/ (8 文件) + agents/ (3 文件) 全部从 `cons
 2. **logger 自检脚本扩展**（低优）— 当前 8 个场景只覆盖核心，可加：JSON 模式 + ctx level 防护的"实际生产场景"、递归 ctx 防护、child('a').child('b').child('c') 三层嵌套、ctx 含 undefined 值
 3. **Preview srcdoc 注入脚本加单测**（低优）— previewInjectScript.js 拆出来后一直没单测覆盖 buildPreviewScript 边界（NaN/负数/非整数）；可以参考 test-logger.mjs 模板写 test-preview-inject.mjs
 4. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage
+
+---
+
+## 迭代 (2026-06-08 cron 14) - previewInjectScript 自检脚本
+
+### 完成的工作
+
+**新增 `front-react/scripts/test-preview-inject.mjs`（20 场景 0 依赖）**
+
+动机：cron 10 把 Preview srcdoc 注入脚本从 Preview.jsx 113-198 行外置到独立模块 `previewInjectScript.js` 后，整个项目一直没单测覆盖 `buildPreviewScript` 的边界。代码里数字 sanity 的兜底跨两个地方（外层 `buildPreviewScript` + 注入脚本内 `tryRestore`），重构时容易漂移；postMessage 协议字符串（`revealNav` / `revealReady` / `revealError` / `revealSlideIdx`）如果被改坏，Preview.jsx 的 nav 派发会静默失败。
+
+模板沿用 cron 13 的 `backend/scripts/test-logger.mjs`：0 依赖（仅 node 原生 `assert`），改完源码跑一遍立即知道有没有 regression。
+
+**覆盖 20 场景**：
+
+- **数字 sanity（8 个）** — 正常整数、0（合法值，不被误判为未设置）、NaN、负数、非整数 2.5、undefined、字符串、Infinity 全部正确 fallback
+- **postMessage 协议字符串（1 个）** — `revealReady` / `revealNav` / `revealError` / `revealSlideIdx` 四个协议名必须存在
+- **nav 命令分支（1 个）** — prev/next/first/last 四条路径都在脚本中
+- **轮询超时兜底（1 个）** — 25 次 × 200ms = 5s，超时发 `revealReady: false`
+- **tryRestore 注册（2 个）** — 通过 `r.on('ready')` 注册 + 旧版 reveal 无 `on()` 时 setTimeout 兜底
+- **tryRestore 容错（2 个）** — `parseInt(restoreH, 10)` + `Number.isInteger` + 总张数上限保护
+- **错误上报（1 个）** — `window.onerror` + `unhandledrejection` 都覆盖
+- **点击翻页后备（1 个）** — `.reveal` 选择器 + click 监听 + 交互元素过滤
+- **slidechanged 索引上报（1 个）** — `r.on('slidechanged')` + `r.getIndices()` 调用
+- **自包含性（1 个）** — 无 `require()` / `import` 语句（srcdoc 内无外部依赖）
+- **数字字面量防漂移（1 个）** — 关键的回归保护：`var restoreH = 3;` 必须保持裸数字，不能变成 `var restoreH = "3";`（一旦有引号脚本里 `parseInt` 仍能跑但 `Number.isInteger` 会判 false，slide 永远不会恢复 — 是静默 bug）
+
+**意外价值**：
+
+最后一个测试用例的设计意图是"以后 refactor 时如果有人改成 `String(restoreH)` 拼到引号里会立即 FAIL"。**这一类静默 bug 在纯字符串拼接代码里非常常见**，现在被钉死了。
+
+**运行方式**：
+
+```bash
+node front-react/scripts/test-preview-inject.mjs
+# result: 20 passed, 0 failed
+```
+
+**结果**：
+
+- 20/20 通过
+- backend/scripts/test-logger.mjs 复跑：10/10 仍通过（未受干扰）
+- 0 npm 依赖、0 build 步骤、跑完 < 100ms
+
+### Build
+
+- 无 build（Node 直跑）
+- 0 依赖
+
+### GitHub
+
+- commit: `ec65476` - test: previewInjectScript 0-依赖自检脚本（20 场景）
+- 已 push 到 main：`087720f..ec65476`
+- 1 file changed, 199 insertions(+)
+
+### Vercel
+
+- 仍然不通（用户需手动重连 GitHub 集成）
+- 本次未改 vercel.json / front-react/src → 触发重连后 webhook 会重新部署最新 dist
+- 自检脚本是 Node 端代码，不进 Vercel 部署产物，但 Vercel 部署失败时本地仍能跑
+
+### 累计成果（自 6-05 第一次迭代算起）
+
+- 自检脚本覆盖到第二个核心模块（logger + previewInjectScript）
+- `scripts/` 目录现在有 2 个文件：backend 1 + front-react 1
+- previewInjectScript 关键不变量被钉死，refactor 时不会静默漂移
+
+### 下次迭代建议（按优先级）
+
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage
+3. **logger 自检脚本扩展**（低优）— 当前 10 个场景，可加：递归 ctx 防护、child 三层嵌套、ctx 含 Date 实例
+4. **draftStore 自检脚本**（低优）— draftStore.js（124 行）也没单测覆盖 LRU 限流 + 截断提示逻辑
