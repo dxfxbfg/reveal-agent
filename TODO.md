@@ -712,3 +712,61 @@ printWindow.addEventListener('load', () => {
 3. **后端启动脚本加 `pino`-like 结构化日志**（低优）— 现在 console.log/warn 混着，运维时不好 grep
 4. **Preview srcdoc 注入脚本加单元测试**（低优）— 现在 previewInjectScript.js 拆出来是测试友好结构，但还没单测覆盖 buildPreviewScript 边界（NaN/负数/非整数）
 
+
+---
+
+## 迭代 (2026-06-07 cron 11) - ExportPanel 三按钮全面 toast 化
+
+### 完成的工作
+
+**ExportPanel.jsx 三按钮 UI 反馈统一化（修复历史遗留 + 用户可感知改进）**
+
+旧问题：扫描发现 ExportPanel.jsx 唯一一处 `alert()` 调用（line 24，PDF 按钮弹窗被拦截时）。整个项目其他所有用户反馈（15+ 处）都走 `addToast()` 三态体系，alert 原生框破坏 UI 一致性 + 阻塞事件循环。同时复制按钮 (`handleCopy`) 静默失败（`.catch(() => {})`）用户无感知；HTML 导出文件名不带时间戳容易同名覆盖。
+
+新方案（1 个文件，60+ / 7- 行）：
+- **替换 `alert()` → `addToast(..., 'error')`** — 与全局 UI 一致 + 不阻塞
+- **`handleCopy` 补成功/失败双反馈** — 旧实现 `.catch(() => {})` 静默
+- **`handleCopy` 加 `execCommand('copy')` fallback** — 极老浏览器 / 非安全上下文（如 http:// 内网）也能复制
+- **HTML 导出文件名加清洗 + 时间戳**
+  - `sanitizeFileBase(name)` — 去掉 `\\ / : * ? " < > |` + 控制字符（防 Windows 报错）+ 折叠空白 + 去末尾 `.`
+  - `timestampSuffix()` — `YYYYMMDD-HHmm` 格式，避免同名多次导出被覆盖
+  - 输出：`演示1-20260607-2230.html`（旧：`演示 1.html`）
+- **PDF 导出成功加引导 toast** — "已打开打印对话框,选择'另存为 PDF'即可" 降低用户认知负担
+- **三个按钮 `if (!html) return` 都改成 toast 提示** — 之前静默 return 用户不知道为什么按钮没反应
+
+边界：
+- `sanitizeFileBase` 入参做类型检查（`typeof name !== 'string'` → fallback 'presentation'）
+- `navigator.clipboard?.writeText` 可选链保护，老 Safari（< 13.1）走 execCommand 路径
+- `execCommand` 路径用 `position: fixed; opacity: 0` 的临时 textarea，不影响布局
+
+### Build
+- dist JS: `index-BaqKlkZk.js` → `index-B0Q-B857.js`（267.64 → 268.53 KB，+0.89 KB / gzip 78.52 → 79.02 KB，+0.5 KB）
+- dist CSS: hash 不变（`index-CgHaPB5V.css`，80.50 KB）— 0 行 CSS 改动
+- 0 错误 0 警告
+- vite preview 验证：root 200, js 200 (271,822B), css 200
+- bundle 关键字符串验证：
+  - `HTML 已导出` × 1 / `已复制到剪贴板` × 2 / `已打开打印对话框` × 1 / `没有可导出` × 2 / `打印失败` × 1 / `复制失败` × 3 — 全部命中
+  - `alert(` 在 dist 中 × 0（彻底清除原生 alert）
+
+### GitHub
+- commit: `87b84b1` - feat: ExportPanel 三按钮全部接入 toast + 文件名清洗 + 时间戳
+- 已 push 到 main：`fb8e28c..87b84b1`
+- 3 files changed, 71 insertions(+), 18 deletions(-)
+- （ExportPanel.jsx +60 / -7, dist 旧文件 rename 为新 hash）
+
+### Vercel
+- 仍然不通（用户需手动重连 GitHub 集成）
+- 本次未改 vercel.json
+- 重连后 webhook 触发，dist 新 hash `index-B0Q-B857.js` 会自动部署
+- 项目里 alert() 全部清除（dist 中 `alert(` 命中 0）
+
+### 累计成果（自 6-05 第一次迭代算起）
+- 16 处用户反馈入口（9 toast + 1 alert + 6 静默）→ **16 处全 toast 化，0 alert**
+- HTML 导出文件命名规范：`{sanitize name}-{YYYYMMDD-HHmm}.html`
+- 复制路径支持现代 Clipboard API + 老浏览器 execCommand 双路径
+
+### 下次迭代建议（按优先级）
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **后端启动脚本加 `pino`-like 结构化日志**（低优）— 现在 12 处 console.log/error 混着，运维时不好 grep
+3. **Preview srcdoc 注入脚本加单元测试**（低优）— previewInjectScript.js 拆出来后一直没单测覆盖 buildPreviewScript 边界（NaN/负数/非整数）
+4. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage
