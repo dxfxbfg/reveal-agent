@@ -1,15 +1,12 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { addToast } from './Toast.jsx';
+import { buildPreviewScript } from '../previewInjectScript.js';
 
 // 幻灯片索引持久化 — 切到 ControlPanel 再切回,或 srcdoc 重新注入时,保留当前位置
 // localStorage key: ra_preview_slide_idx_<taskId> = "h,v"
 // 写入时机：srcdoc 内 reveal 触发 slidechanged 时上报
 // 恢复时机：srcdoc 注入时把要恢复的索引内联到脚本里（避免父→子异步握手）
-
-// 占位符必须是字符串字面量,直接出现在注入脚本里,再用 string.replace 替换
-// 千万不能写成 ${...} — 那会被 JSX 解析为表达式
-const RESTORE_H_PLACEHOLDER = '__RESTORE_H__';
-const RESTORE_V_PLACEHOLDER = '__RESTORE_V__';
+// 注入脚本逻辑在 previewInjectScript.js（独立文件，可单独维护/测试）
 
 const slideIdxKey = (taskId) => `ra_preview_slide_idx_${taskId}`;
 
@@ -110,91 +107,13 @@ export default function Preview({ html, active = true, taskId }) {
       restoredIdxRef.current = saved;
       restoreAnnouncedRef.current = false;
 
-      const restoreH = saved ? String(saved.h) : '0';
-      const restoreV = saved ? String(saved.v) : '0';
+      const restoreH = saved ? saved.h : 0;
+      const restoreV = saved ? saved.v : 0;
 
-      const enhancedHtml = html.replace(
-        '</body>',
-        `<script>
-          (function(){
-            var r, attempts = 0, restored = false;
-            // 父页面注入前内联进来的恢复索引（占位符替换）
-            var restoreH = '__RESTORE_H__';
-            var restoreV = '__RESTORE_V__';
-            function setup(){
-              r = window.Reveal;
-              if(!r){
-                // 最多轮询 5s（200ms × 25 次），避免 CDN 慢时永久挂起
-                if (++attempts > 25) {
-                  try { parent.postMessage({ revealReady: false, reason: 'Reveal.js 加载超时（CDN 不可达？）' }, '*'); } catch(e){}
-                  return;
-                }
-                setTimeout(setup, 200);
-                return;
-              }
-              // nav 命令：prev/next/first/last
-              window.addEventListener('message', function(e){
-                if(!e.data || !e.data.revealNav) return;
-                var cmd = e.data.revealNav;
-                if (cmd === 'prev') r.prev();
-                else if (cmd === 'next') r.next();
-                else if (cmd === 'first') r.slide(0);
-                else if (cmd === 'last') r.slide(r.getTotalSlides() - 1);
-              });
-              // 点击翻页后备
-              var revealEl = document.querySelector('.reveal');
-              if (revealEl) {
-                revealEl.addEventListener('click', function(e){
-                  if (e.button !== 0) return;
-                  if (window.getSelection && String(window.getSelection()).trim()) return;
-                  if (e.target.closest('a, button, input, textarea, select, .controls, .progress')) return;
-                  r.next();
-                });
-              }
-              // 上报 srcdoc 内运行时报错到父页面
-              window.addEventListener('error', function(ev){
-                try { parent.postMessage({ revealError: (ev.message || '未知错误') + ' @ ' + (ev.filename || '?') }, '*'); } catch(_){}
-              });
-              window.addEventListener('unhandledrejection', function(ev){
-                try { parent.postMessage({ revealError: '未捕获 Promise: ' + (ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)) }, '*'); } catch(_){}
-              });
-              // 索引变化时上报父页面（用于切走/重连后恢复）
-              if (typeof r.on === 'function') {
-                r.on('slidechanged', function(){
-                  try {
-                    var idx = r.getIndices();
-                    parent.postMessage({ revealSlideIdx: { h: idx.h || 0, v: idx.v || 0 } }, '*');
-                  } catch(_){}
-                });
-              }
-              // reveal 就绪后,如果父页面要恢复某个索引,跳过去
-              function tryRestore(){
-                if (restored) return;
-                if (!restoreH && restoreH !== 0) { restored = true; return; }
-                var h = parseInt(restoreH, 10), v = parseInt(restoreV, 10);
-                if (!Number.isInteger(h) || h < 0 || !Number.isInteger(v) || v < 0) { restored = true; return; }
-                var total = (typeof r.getTotalSlides === 'function') ? r.getTotalSlides() : 0;
-                if (h >= total) { restored = true; return; }
-                try { r.slide(h, v); restored = true; }
-                catch(_) { restored = true; }
-              }
-              if (typeof r.on === 'function') {
-                r.on('ready', tryRestore);
-              } else {
-                // 旧版 reveal 没有 on(),setTimeout 兜底
-                setTimeout(tryRestore, 200);
-              }
-              // 通知父页面：已就绪（带总张数便于"已恢复到第 N/M 张"提示）
-              try { parent.postMessage({ revealReady: true, total: (typeof r.getTotalSlides === 'function') ? r.getTotalSlides() : 0 }, '*'); } catch(e){}
-            }
-            setup();
-          })();
-        </script>
-      </body>`
-      )
-      // 把占位符替换为真实数值
-      .replace(RESTORE_H_PLACEHOLDER, restoreH)
-      .replace(RESTORE_V_PLACEHOLDER, restoreV);
+      // buildPreviewScript 直接返回带真实数值的 <script>...</script> 字符串，
+      // 拼到 html 末尾的 </body> 之前。脚本逻辑见 previewInjectScript.js
+      const injectScript = buildPreviewScript(restoreH, restoreV);
+      const enhancedHtml = html.replace('</body>', `${injectScript}</body>`);
       ref.current.srcdoc = enhancedHtml;
     }
   }, [html, retryNonce, taskId]);
