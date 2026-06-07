@@ -12,7 +12,8 @@
 
 const INDEX_KEY = 'ra_chat_draft_index';
 const DRAFT_PREFIX = 'ra_chat_draft_';
-const MAX_KEEP = 20;  // 最多保留 20 个 task 的草稿（≈100KB 上限，安全边界内）
+const MAX_KEEP = 20;       // 最多保留 20 个 task 的草稿（按 task 数量 LRU）
+const MAX_DRAFT_SIZE = 20 * 1024;  // 单条草稿最大 20KB（防止单 task 撑爆 localStorage）
 
 const safeGet = (key) => {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -22,6 +23,18 @@ const safeSet = (key, val) => {
 };
 const safeRemove = (key) => {
   try { localStorage.removeItem(key); } catch {}
+};
+
+// 把超过 size 上限的 text 截断到 MAX_DRAFT_SIZE（按字符切，避免 UTF-8 surrogate 被劈开）
+// 截断发生在写盘前，用户输入框里的 text 不动，只是 localStorage 里存的是截断版
+// 返回 { text, truncated }，truncated 标志给调用方弹提示用
+const truncateDraft = (text) => {
+  if (typeof text !== 'string') return { text: '', truncated: false };
+  if (text.length <= MAX_DRAFT_SIZE) return { text, truncated: false };
+  return {
+    text: text.slice(0, MAX_DRAFT_SIZE) + '\n\n…[草稿已截断,完整内容请尽快发送]',
+    truncated: true,
+  };
 };
 
 const draftKey = (taskId) => `${DRAFT_PREFIX}${taskId}`;
@@ -59,15 +72,18 @@ export const load = (taskId) => {
 
 // 保存草稿（text 为空等价于 remove）
 // 每次写入都会触发 LRU 淘汰检查
+// 返回 true 表示被截断（调用方可弹 toast 提示）
 export const save = (taskId, text) => {
   if (!text) {
     safeRemove(draftKey(taskId));
     // 从索引中移除
     const idx = readIndex().filter(e => e.id !== taskId);
     writeIndex(idx);
-    return;
+    return { truncated: false };
   }
-  safeSet(draftKey(taskId), text);
+  // 单条 size 上限检查：超出截断后再写盘
+  const { text: storedText, truncated } = truncateDraft(text);
+  safeSet(draftKey(taskId), storedText);
   const idx = readIndex();
   const next = touchIndex(idx, taskId);
   // 超过上限就淘汰最老的
@@ -76,6 +92,7 @@ export const save = (taskId, text) => {
     evicted.forEach(e => safeRemove(draftKey(e.id)));
   }
   writeIndex(next);
+  return { truncated };
 };
 
 // 移除指定 task 的草稿（任务被删除时用）

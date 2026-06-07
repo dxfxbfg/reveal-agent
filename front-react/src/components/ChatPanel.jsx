@@ -6,6 +6,7 @@ import * as draftStore from '../draftStore.js';
 // 输入草稿按 taskId 存到 localStorage — 切走/刷新页面后回到当前 task 仍能看到未发送的文字
 // 发送后或丢弃任务时由调用方 draftStore.save(task.id, '') 移除 key
 // LRU 上限 20 个 task 的草稿，由 draftStore 内部维护索引和淘汰
+// 单条 size 上限 20KB，超出截断后写盘 — 避免某个 task 撑爆 localStorage
 const loadDraft = (taskId) => draftStore.load(taskId);
 const saveDraft = (taskId, text) => draftStore.save(taskId, text);
 
@@ -20,6 +21,9 @@ export default function ChatPanel({
   const fileInputRef = useRef(null);
   const [inputText, setInputTextRaw] = useState(() => loadDraft(task.id));
   const [dragOver, setDragOver] = useState(false);
+  // 草稿被截断时短暂显示 inline 提示（任务栏下方），3 秒后自动消失
+  const [draftTruncated, setDraftTruncated] = useState(false);
+  const truncatedTimerRef = useRef(null);
 
   // 节流写入 localStorage：keystroke 高频触发的 setInputText 不每次都写盘
   // pendingDraftRef 保存"待写"的值；rAF 合并到一次写
@@ -35,7 +39,12 @@ export default function ChatPanel({
     draftRafRef.current = requestAnimationFrame(() => {
       draftRafRef.current = null;
       if (pendingDraftRef.current != null) {
-        saveDraft(task.id, pendingDraftRef.current);
+        const result = saveDraft(task.id, pendingDraftRef.current);
+        if (result && result.truncated) {
+          setDraftTruncated(true);
+          if (truncatedTimerRef.current) clearTimeout(truncatedTimerRef.current);
+          truncatedTimerRef.current = setTimeout(() => setDraftTruncated(false), 4000);
+        }
         pendingDraftRef.current = null;
       }
     });
@@ -58,6 +67,7 @@ export default function ChatPanel({
   }, [task.id]);
 
   // 卸载时把"还没写盘的 pending 值"flush 一次（避免 task 切换瞬间丢字）
+  // 顺手清掉截断提示的 timer，避免内存泄漏
   useEffect(() => () => {
     if (draftRafRef.current != null) {
       cancelAnimationFrame(draftRafRef.current);
@@ -66,6 +76,10 @@ export default function ChatPanel({
         saveDraft(task.id, pendingDraftRef.current);
         pendingDraftRef.current = null;
       }
+    }
+    if (truncatedTimerRef.current) {
+      clearTimeout(truncatedTimerRef.current);
+      truncatedTimerRef.current = null;
     }
   }, [task.id]);
 
@@ -100,7 +114,12 @@ export default function ChatPanel({
     e.preventDefault();
     const next = inputText + text;
     setInputTextRaw(next);
-    saveDraft(task.id, next);  // 粘贴内容立即落盘（不走 rAF）
+    const result = saveDraft(task.id, next);  // 粘贴内容立即落盘（不走 rAF）
+    if (result && result.truncated) {
+      setDraftTruncated(true);
+      if (truncatedTimerRef.current) clearTimeout(truncatedTimerRef.current);
+      truncatedTimerRef.current = setTimeout(() => setDraftTruncated(false), 4000);
+    }
     pendingDraftRef.current = null;
     // 下一帧把 textarea 高度撑起来
     requestAnimationFrame(() => {
@@ -185,6 +204,13 @@ export default function ChatPanel({
         feedbackLogs={task.generation.feedbackLogs} knowledgeLogs={task.generation.knowledgeLogs} />
 
       <div id="input-area-wrapper">
+        {/* 草稿截断提示：单条超过 20KB 时短暂显示 inline 警告 */}
+        {draftTruncated && (
+          <div className="draft-truncated-hint" role="status">
+            <span className="draft-truncated-icon" aria-hidden="true">⚠</span>
+            <span>草稿已超过 20KB，仅前 20KB 被保存。请尽快发送避免内容丢失。</span>
+          </div>
+        )}
         {/* 已拖入/上传的文件 chips — 在输入框上方可见 */}
         <div id="dropped-files-row">
           {task.droppedFiles?.map((f, i) => (

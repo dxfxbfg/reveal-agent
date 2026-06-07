@@ -645,6 +645,30 @@ body {
   margin-bottom: var(--space-2);
 }
 
+/* 草稿截断提示 — 单条超过 20KB 时短暂显示 inline 警告 */
+.draft-truncated-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-size: 12px;
+  line-height: 1.4;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  animation: draftHintIn 0.2s ease-out;
+}
+.draft-truncated-hint .draft-truncated-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+@keyframes draftHintIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .dropped-chip {
   display: inline-flex;
   align-items: center;

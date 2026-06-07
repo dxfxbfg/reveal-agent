@@ -417,6 +417,68 @@ printWindow.addEventListener('load', () => {
 - 修复必须用户手动：进 Vercel dashboard → Project Settings → Git → 重新连接 GitHub 仓库（断一次再连）
 - 本次 push 后 Vercel 端 webhook 仍不会触发重新部署
 
+## 迭代 (2026-06-07 cron 7) - 草稿单条 size 上限
+
+### 完成的工作
+
+**1. 草稿单条 20KB size 上限（中优 #2 from 上次"下次迭代建议"）**
+
+旧问题：草稿 LRU 只按 task 数量淘汰（最多 20 个）；如果某个 task 单条草稿 > 50KB 仍可能撑爆 localStorage quota，触发 QuotaExceededError
+新方案：双层防护 — 数量 LRU + 单条 size LRU
+
+**`draftStore.js` 改动：**
+- 新增 `MAX_DRAFT_SIZE = 20 * 1024`（单条上限 20KB）
+- 新增 `truncateDraft(text)` helper：超长 text 截到前 20KB + 追加 `…[草稿已截断,完整内容请尽快发送]` 标记
+- `truncateDraft` 改成返回 `{ text, truncated }` 对象（之前直接返回 string）
+- `save()` 改用 truncateDraft 处理后再 `safeSet`，返回 `{ truncated }` 给调用方
+- 非 string 输入安全降级到 `{ text: '', truncated: false }`
+
+**`ChatPanel.jsx` 改动：**
+- 新增 `draftTruncated` state + `truncatedTimerRef` 4 秒定时器
+- `setInputText` 路径（rAF 合并的 keystroke 写盘）检测 truncated → 显示 inline 提示
+- `handlePaste` 路径（不走 rAF 立即落盘）同样检测 truncated → 显示 inline 提示
+- 卸载 cleanup 顺手 clear 截断提示 timer（避免内存泄漏）
+
+**UI — inline 截断提示：**
+- `draft-truncated-hint` div 显示在 `#input-area-wrapper` 顶部（input 上方）
+- 黄色警告色（amber-500/12 bg + amber-700 text），`⚠` 图标 + 简短文案
+- 4 秒后自动消失，连续触发时 reset timer
+- 配套 `@keyframes draftHintIn`（0.2s 淡入 + 4px 上滑）
+
+**边界处理：**
+- 截断按 char 切，emoji 边界不破 surrogate（slice(0, 20480) 在偶数位上）
+- 单元测试 15 个断言全过：short/exact/1-over/50KB-中文/null/undefined/number/empty/emoji-surrogate
+- 写入失败 try/catch 静默（不破坏现有约定）
+- 用户输入框里的 text 完全不动，只是 localStorage 存的是截断版
+
+### Build
+- dist JS: `index--G1gKnFM.js` → `index-D0D4_8v6.js`（264.09 → 264.79 KB，+0.7 KB / gzip 77.48 → 77.75 KB，+0.27 KB）
+- dist CSS: `index-DR4W856s.css` → `index-BerOl1kG.css`（80.00 → 80.43 KB，+0.43 KB / gzip 11.29 → 11.39 KB，+0.10 KB）
+- 0 错误，0 警告
+- vite preview: root 200 (423B), js 200 (267,713B), css 200 (80,427B)
+- 验证 grep: dist 含 `草稿已截断` + `draft-truncated-hint`（新代码已进 bundle）
+
+### GitHub
+- commit 待 push
+- 3 files changed (draftStore.js / ChatPanel.jsx / styles.css), 72 insertions(+), 5 deletions(-)
+- 旧 dist 文件 `index--G1gKnFM.js` / `index-DR4W856s.css` 通过 `git add -u` 自动清理
+
+### Vercel
+- 仍然不通（用户需手动重连 GitHub 集成，阻塞所有新功能上线）
+- 本次未改 vercel.json
+
+### 累计成果
+- 草稿防护从"单层数量 LRU"升级为"双层 LRU（数量 + size）"，localStorage 撑爆风险基本消除
+- 截断行为可观测（UI 提示），用户不会发现草稿"莫名其妙变短"
+
+### 下次迭代建议（按优先级）
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **后端 puppeteer 路由彻底删除**（中优）— 现在 `/api/export/pdf` 只标记 deprecated，下次主版本可彻底删除（包括 puppeteer 依赖 ~300MB）
+3. **AnimationWorkspace / ConsultingWorkspace 草稿迁移到新 draftStore**（低优）— 现在只有 ChatPanel 用新 LRU，其他两个 workspace 还各自管自己的草稿
+4. **Preview 位置恢复时加个轻提示**（低优）— 切回 slides 时如果索引被恢复（不是 0），可在角落 toast "已恢复到第 N 张"
+
+---
+
 ## 迭代 (2026-06-07 cron 6) - 预览区幻灯片位置保留
 
 ### 完成的工作
