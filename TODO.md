@@ -661,6 +661,54 @@ printWindow.addEventListener('load', () => {
 ### 下次迭代建议（按优先级）
 1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
 2. **草稿导出/导入**（低优）— 用户想跨设备用，可以导出一份 JSON 备份，导入时恢复
-3. **Preview srcdoc 注入脚本外置**（低优）— 当前 `<script>...</script>` 模板字面量嵌在 jsx 里，~50 行代码，让 Preview.jsx 显得臃肿；可拆到 `previewInjectScript.js` 常量
+3. ~~**Preview srcdoc 注入脚本外置**（低优）— 当前 `<script>...</script>` 模板字面量嵌在 jsx 里，~50 行代码，让 Preview.jsx 显得臃肿；可拆到 `previewInjectScript.js` 常量~~ ✅ 2026-06-07 cron 10
 4. **后端启动脚本加 `pino`-like 结构化日志**（低优）— 现在 console.log/warn 混着，运维时不好 grep
+
+---
+
+## 迭代 (2026-06-07 cron 10) - Preview srcdoc 注入脚本外置
+
+### 完成的工作
+
+**Preview srcdoc 注入脚本外置到独立模块（低优 #3 完成）**
+
+旧问题：Preview.jsx 113–198 行内嵌 ~80 行 `<script>...</script>` 模板字面量，让 React 组件文件显得臃肿。调试 srcdoc 注入脚本需要在大 jsx 里翻字符串，逻辑混在 JSX 模板里也不容易独立测试。
+
+新方案：
+- 新增 `front-react/src/previewInjectScript.js`（107 行，含 JSDoc + 设计说明）
+- 导出 `buildPreviewScript(restoreH, restoreV)` 函数，返回带真实数值的 `<script>...</script>` 字符串
+- 数字 sanity 在源头做：非整数/负数自动 fallback 到 0
+- Preview.jsx 替换：原来 80 行的模板字面量 → 单行 `buildPreviewScript(h, v)` 调用
+- **顺带消除了占位符机制**：之前用 `__RESTORE_H__`/`__RESTORE_V__` 占位符 + `.replace()` 二次替换（有个隐性坑：写 `${...}` 会被 JSX 解析为表达式导致 build 失败 — 之前迭代踩过）。现在 `buildPreviewScript` 直接用模板字面量插值 JS 数值，build 阶段就完成替换，无运行时占位符
+
+**收益**：
+- Preview.jsx 309 → 228 行（-81 行）
+- 注入脚本现在用纯 JS 写（无 JSX 模板转义层），看代码可以直接阅读
+- 后续给 srcdoc 加能力（导出图片、键盘快捷键、缩放控制）有独立测试单元
+- bundle 体积：268.06 → 267.64 KB（-0.42 KB / gzip 78.56 → 78.52 KB），因为去掉了占位符替换那两行
+- 0 build 错误 0 警告
+- vite preview: root/js/css 全部 200 OK
+- bundle 关键字符串验证：revealNav × 3 / revealReady × 3 / slidechanged × 1 / restoreH × 3 / getTotalSlides × 3 全部命中
+- 占位符 `__RESTORE_H__`/`__RESTORE_V__` 在 dist + 源码中 0 命中（彻底清除）
+
+### Build
+- dist JS: `index-DuWiPA3x.js` → `index-BaqKlkZk.js`（268.06 → 267.64 KB / gzip 78.56 → 78.52 KB）
+- dist CSS: hash 不变（`index-CgHaPB5V.css`，80.50 KB）
+
+### GitHub
+- commit: `7ce896b` - refactor: Preview srcdoc 注入脚本外置到独立模块
+- 已 push 到 main：`3b42cab..7ce896b`
+- 4 files changed, 200 insertions(+), 175 deletions(-)
+- （Preview.jsx -97 行 / previewInjectScript.js +107 行 / dist 旧文件删除）
+
+### Vercel
+- 仍然不通（用户需手动重连 GitHub 集成，阻塞所有新功能上线）
+- 本次未改 vercel.json
+- 重连后 webhook 触发，dist 新 hash `index-BaqKlkZk.js` 会自动部署
+
+### 下次迭代建议（按优先级）
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **草稿导出/导入**（低优）— 用户想跨设备用，可以导出一份 JSON 备份，导入时恢复
+3. **后端启动脚本加 `pino`-like 结构化日志**（低优）— 现在 console.log/warn 混着，运维时不好 grep
+4. **Preview srcdoc 注入脚本加单元测试**（低优）— 现在 previewInjectScript.js 拆出来是测试友好结构，但还没单测覆盖 buildPreviewScript 边界（NaN/负数/非整数）
 
