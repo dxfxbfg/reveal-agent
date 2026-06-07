@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE, genId, formatSize } from '../config.js';
 import { connectWS, on, off } from '../ws.js';
 import { addToast } from './Toast.jsx';
+import * as draftStore from '../draftStore.js';
 
 const TASKS_KEY = 'cons_tasks_v1';
 const loadTasks = () => { try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); } catch { return []; } };
 const saveTasks = (t) => { try { localStorage.setItem(TASKS_KEY, JSON.stringify(t)); } catch {} };
+
+// 草稿持久化（与 ChatPanel / AnimationWorkspace 共用 draftStore：数量 LRU 20 + 单条 20KB 上限 + 截断提示）
+// task 切换时重新 load；rAF 合并节流写盘；卸载时 flush pending 值
 
 function createTask() {
   return {
@@ -33,7 +37,8 @@ export default function ConsultingWorkspace({ customApis }) {
   const taskRef = useRef(task);
   taskRef.current = task;
 
-  const [input, setInput] = useState('');
+  // 草稿持久化：与 ChatPanel / AnimationWorkspace 共用 draftStore
+  const [input, setInputRaw] = useState(() => draftStore.load(task.id));
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [showCode, setShowCode] = useState(false);
@@ -42,10 +47,54 @@ export default function ConsultingWorkspace({ customApis }) {
   const [dragOver, setDragOver] = useState(false);
   const [fileTab, setFileTab] = useState('generated');
   const [consultRound, setConsultRound] = useState(0);
+  const [draftTruncated, setDraftTruncated] = useState(false);
+  const truncatedTimerRef = useRef(null);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const sessionRef = useRef(genId());
   const abortRef = useRef(null);
+  const pendingDraftRef = useRef(null);
+  const draftRafRef = useRef(null);
+
+  // setInput 包装：rAF 合并节流写盘
+  const setInput = useCallback((next) => {
+    setInputRaw(typeof next === 'function' ? next : next);
+    const value = typeof next === 'function' ? null : next;
+    pendingDraftRef.current = value;
+    if (draftRafRef.current != null) return;
+    draftRafRef.current = requestAnimationFrame(() => {
+      draftRafRef.current = null;
+      if (pendingDraftRef.current != null) {
+        const result = draftStore.save(task.id, pendingDraftRef.current);
+        if (result && result.truncated) {
+          setDraftTruncated(true);
+          if (truncatedTimerRef.current) clearTimeout(truncatedTimerRef.current);
+          truncatedTimerRef.current = setTimeout(() => setDraftTruncated(false), 4000);
+        }
+        pendingDraftRef.current = null;
+      }
+    });
+  }, [task.id]);
+
+  // task 切换时重新 load
+  useEffect(() => {
+    setInputRaw(draftStore.load(task.id));
+    pendingDraftRef.current = null;
+    if (draftRafRef.current != null) { cancelAnimationFrame(draftRafRef.current); draftRafRef.current = null; }
+  }, [task.id]);
+
+  // 卸载时 flush pending + 清截断提示 timer
+  useEffect(() => () => {
+    if (draftRafRef.current != null) {
+      cancelAnimationFrame(draftRafRef.current);
+      draftRafRef.current = null;
+      if (pendingDraftRef.current != null) {
+        draftStore.save(task.id, pendingDraftRef.current);
+        pendingDraftRef.current = null;
+      }
+    }
+    if (truncatedTimerRef.current) { clearTimeout(truncatedTimerRef.current); truncatedTimerRef.current = null; }
+  }, [task.id]);
 
   const activeFile = task.files.find(f => f.id === task.activeFileId);
   const generalFiles = task.files.filter(f => f.deckType === 'general');
@@ -109,6 +158,9 @@ export default function ConsultingWorkspace({ customApis }) {
     const text = input.trim();
     const t = taskRef.current;
     setInput(''); setError('');
+    draftStore.save(t.id, '');  // 显式清草稿
+    pendingDraftRef.current = null;
+    if (draftRafRef.current != null) { cancelAnimationFrame(draftRafRef.current); draftRafRef.current = null; }
     updateTask(t.id, prev => ({ ...prev, msgs: [...prev.msgs, { role: 'user', content: text, ts: Date.now() }] }));
     if (t.msgs.length === 0) updateTask(t.id, { title: text.slice(0, 30) });
     setConsultRound(r => r + 1);
@@ -155,10 +207,27 @@ export default function ConsultingWorkspace({ customApis }) {
   };
 
   const handleDelete = (id) => {
+    draftStore.remove(id);
     setTasks(prev => { const n = prev.filter(t => t.id !== id); if (activeId === id) setActiveId(n[0]?.id || null); return n; });
   };
 
   const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+
+  // 大段粘贴：一次性 setState + 立即落盘
+  const handlePaste = (e) => {
+    const text = e.clipboardData?.getData('text');
+    if (text == null) return;
+    e.preventDefault();
+    const next = input + text;
+    setInputRaw(next);
+    const result = draftStore.save(task.id, next);
+    if (result && result.truncated) {
+      setDraftTruncated(true);
+      if (truncatedTimerRef.current) clearTimeout(truncatedTimerRef.current);
+      truncatedTimerRef.current = setTimeout(() => setDraftTruncated(false), 4000);
+    }
+    pendingDraftRef.current = null;
+  };
 
   const handleStop = () => { abortRef.current?.abort(); setIsGenerating(false); };
 
@@ -331,6 +400,13 @@ export default function ConsultingWorkspace({ customApis }) {
         </div>
 
         <div className="consulting-chat-input-row">
+          {/* 草稿截断提示 */}
+          {draftTruncated && (
+            <div className="draft-truncated-hint" role="status" style={{ width: '100%', marginBottom: 6 }}>
+              <span className="draft-truncated-icon" aria-hidden="true">⚠</span>
+              <span>草稿已超过 20KB，仅前 20KB 被保存。请尽快发送避免内容丢失。</span>
+            </div>
+          )}
           {task.ready && !isGenerating ? (
             <button className="consulting-gen-btn" onClick={handleGenerate}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -347,6 +423,7 @@ export default function ConsultingWorkspace({ customApis }) {
             <>
               <textarea className="consulting-chat-input" value={input}
                 onChange={e => setInput(e.target.value)} onKeyDown={handleKey}
+                onPaste={handlePaste}
                 placeholder="输入需求... (Enter 发送)" rows={2} />
               <button className="consulting-send-btn" onClick={handleSend} disabled={!input.trim()}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>

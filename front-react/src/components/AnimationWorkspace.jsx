@@ -2,10 +2,16 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE, genId } from '../config.js';
 import { connectWS, on, off } from '../ws.js';
 import { addToast } from './Toast.jsx';
+import * as draftStore from '../draftStore.js';
 
 const TASKS_KEY = 'anim_tasks_v2';
 const loadTasks = () => { try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); } catch { return []; } };
 const saveTasks = (t) => { try { localStorage.setItem(TASKS_KEY, JSON.stringify(t)); } catch {} };
+
+// 草稿持久化（与 ChatPanel 共用 draftStore：数量 LRU 20 + 单条 20KB 上限 + 截断提示）
+// key 前缀是 'ra_chat_draft_'（draftStore 内部固定），animation 和 consulting 共用同一个 LRU 池
+// 这里通过 taskId 区分（animation taskId 是 genId()，与 chat taskId 不可能撞）
+// task 切换时重新 load；卸载时 flush 未写盘的 pending 值；rAF 合并节流写盘
 
 function createTask() {
   return { id: genId(), title: '新动画', mode: 'ppt', msgs: [], files: [], activeFileId: null, refFiles: [] };
@@ -17,7 +23,9 @@ export default function AnimationWorkspace({ customApis }) {
   const task = tasks.find(t => t.id === activeId) || tasks[0];
   const taskRef = useRef(task); taskRef.current = task;
 
-  const [input, setInput] = useState('');
+  // 草稿持久化：与 ChatPanel 共用 draftStore（数量 LRU 20 + 单条 20KB 上限 + 截断提示）
+  // task 切换时重新 load；rAF 合并节流写盘；卸载时 flush pending 值
+  const [input, setInputRaw] = useState(() => draftStore.load(task.id));
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [showCode, setShowCode] = useState(false);
@@ -25,10 +33,55 @@ export default function AnimationWorkspace({ customApis }) {
   const [copied, setCopied] = useState(false);
   const [fileTab, setFileTab] = useState('generated');
   const [dragOver, setDragOver] = useState(false);
+  // 草稿被截断时短暂显示 inline 提示
+  const [draftTruncated, setDraftTruncated] = useState(false);
+  const truncatedTimerRef = useRef(null);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const sessionRef = useRef(genId());
   const abortRef = useRef(null);
+  const pendingDraftRef = useRef(null);
+  const draftRafRef = useRef(null);
+
+  // setInput 包装：keystroke 高频触发时 rAF 合并到一次写盘
+  const setInput = useCallback((next) => {
+    setInputRaw(typeof next === 'function' ? next : next);
+    const value = typeof next === 'function' ? null : next;
+    pendingDraftRef.current = value;
+    if (draftRafRef.current != null) return;
+    draftRafRef.current = requestAnimationFrame(() => {
+      draftRafRef.current = null;
+      if (pendingDraftRef.current != null) {
+        const result = draftStore.save(task.id, pendingDraftRef.current);
+        if (result && result.truncated) {
+          setDraftTruncated(true);
+          if (truncatedTimerRef.current) clearTimeout(truncatedTimerRef.current);
+          truncatedTimerRef.current = setTimeout(() => setDraftTruncated(false), 4000);
+        }
+        pendingDraftRef.current = null;
+      }
+    });
+  }, [task.id]);
+
+  // task 切换时重新 load 对应 task 的草稿；挂起 rAF 清掉
+  useEffect(() => {
+    setInputRaw(draftStore.load(task.id));
+    pendingDraftRef.current = null;
+    if (draftRafRef.current != null) { cancelAnimationFrame(draftRafRef.current); draftRafRef.current = null; }
+  }, [task.id]);
+
+  // 卸载时 flush pending + 清截断提示 timer
+  useEffect(() => () => {
+    if (draftRafRef.current != null) {
+      cancelAnimationFrame(draftRafRef.current);
+      draftRafRef.current = null;
+      if (pendingDraftRef.current != null) {
+        draftStore.save(task.id, pendingDraftRef.current);
+        pendingDraftRef.current = null;
+      }
+    }
+    if (truncatedTimerRef.current) { clearTimeout(truncatedTimerRef.current); truncatedTimerRef.current = null; }
+  }, [task.id]);
 
   const activeFile = task.files.find(f => f.id === task.activeFileId);
   const pptFiles = task.files.filter(f => f.mode === 'ppt');
@@ -65,6 +118,9 @@ export default function AnimationWorkspace({ customApis }) {
     const text = input.trim();
     const t = taskRef.current;
     setInput(''); setError('');
+    draftStore.save(t.id, '');  // 显式清草稿
+    pendingDraftRef.current = null;
+    if (draftRafRef.current != null) { cancelAnimationFrame(draftRafRef.current); draftRafRef.current = null; }
     updateTask(t.id, prev => ({ ...prev, msgs: [...prev.msgs, { role: 'user', content: text, ts: Date.now() }] }));
     if (t.msgs.length === 0) updateTask(t.id, { title: text.slice(0, 30) });
     setIsGenerating(true);
@@ -82,8 +138,23 @@ export default function AnimationWorkspace({ customApis }) {
 
   const handleStop = () => { abortRef.current?.abort(); setIsGenerating(false); };
   const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+  // 大段粘贴（流程图模式用户经常粘贴几 KB HTML）：一次性 setState + 立即落盘，不走 rAF
+  const handlePaste = (e) => {
+    const text = e.clipboardData?.getData('text');
+    if (text == null) return;  // 让浏览器走默认行为
+    e.preventDefault();
+    const next = input + text;
+    setInputRaw(next);
+    const result = draftStore.save(task.id, next);
+    if (result && result.truncated) {
+      setDraftTruncated(true);
+      if (truncatedTimerRef.current) clearTimeout(truncatedTimerRef.current);
+      truncatedTimerRef.current = setTimeout(() => setDraftTruncated(false), 4000);
+    }
+    pendingDraftRef.current = null;
+  };
   const handleNew = () => { const t = createTask(); setTasks(prev => [...prev, t]); setActiveId(t.id); };
-  const handleDeleteTask = (id) => { setTasks(prev => { const n = prev.filter(t => t.id !== id); if (activeId === id) setActiveId(n[0]?.id || null); return n; }); };
+  const handleDeleteTask = (id) => { draftStore.remove(id); setTasks(prev => { const n = prev.filter(t => t.id !== id); if (activeId === id) setActiveId(n[0]?.id || null); return n; }); };
   const handleDeleteFile = (id) => { updateTask(task.id, t => ({ ...t, files: t.files.filter(f => f.id !== id), activeFileId: t.activeFileId === id ? (t.files.filter(f => f.id !== id)[0]?.id || null) : t.activeFileId })); };
   const handleExportFile = (f) => { const b = new Blob([f.html], { type: 'text/html' }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `anim_${f.mode}_${f.id}.html`; a.click(); URL.revokeObjectURL(u); };
   const handleCopyCode = async (html) => {
@@ -168,6 +239,13 @@ export default function AnimationWorkspace({ customApis }) {
         </div>
 
         <div className="animation-chat-input-row">
+          {/* 草稿截断提示 */}
+          {draftTruncated && (
+            <div className="draft-truncated-hint" role="status" style={{ width: '100%', marginBottom: 6 }}>
+              <span className="draft-truncated-icon" aria-hidden="true">⚠</span>
+              <span>草稿已超过 20KB，仅前 20KB 被保存。请尽快发送避免内容丢失。</span>
+            </div>
+          )}
           {isGenerating ? (
             <div className="anim-gen-row">
               <div className="anim-gen-btn disabled" style={{ flex: 1 }}><div className="btn-spinner" />生成中...</div>
@@ -176,6 +254,7 @@ export default function AnimationWorkspace({ customApis }) {
           ) : (
             <>
               <textarea className="anim-chat-input" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey}
+                onPaste={handlePaste}
                 placeholder={task.mode === 'ppt' ? '输入科普文本... (Enter 发送)' : '粘贴 HTML 代码... (Enter 发送)'} rows={2} disabled={isGenerating} />
               <button className="anim-send-btn" onClick={handleSend} disabled={!input.trim()}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
