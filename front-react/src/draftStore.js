@@ -105,12 +105,16 @@ export const remove = (taskId) => {
 // 清理孤儿草稿（task 列表里不存在的 id 直接清掉）
 // validTaskIds: 当前活跃 task 的 id 集合
 // orphanIds: 调用方从索引里算出的孤儿 id 列表（避免本模块再扫一遍 localStorage）
+// 鲁棒性：只接受数组；其他类型（null/undefined/字符串/对象）走早返回 0
 export const cleanupOrphans = (orphanIds) => {
-  if (!orphanIds || orphanIds.length === 0) return 0;
-  orphanIds.forEach(id => safeRemove(draftKey(id)));
-  const idx = readIndex().filter(e => !orphanIds.includes(e.id));
+  if (!Array.isArray(orphanIds) || orphanIds.length === 0) return 0;
+  const valid = orphanIds.filter(id => typeof id === 'string' && id.length > 0);
+  valid.forEach(id => safeRemove(draftKey(id)));
+  if (valid.length === 0) return 0;
+  const validSet = new Set(valid);
+  const idx = readIndex().filter(e => !validSet.has(e.id));
   writeIndex(idx);
-  return orphanIds.length;
+  return valid.length;
 };
 
 // 调试用：导出当前 LRU 状态
