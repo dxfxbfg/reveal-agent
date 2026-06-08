@@ -910,3 +910,115 @@ node front-react/scripts/test-preview-inject.mjs
 2. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage
 3. **logger 自检脚本扩展**（低优）— 当前 10 个场景，可加：递归 ctx 防护、child 三层嵌套、ctx 含 Date 实例
 4. **draftStore 自检脚本**（低优）— draftStore.js（124 行）也没单测覆盖 LRU 限流 + 截断提示逻辑
+
+---
+
+## 迭代 (2026-06-08 cron 15) - draftStore 自检脚本 + cleanupOrphans 鲁棒性加固
+
+### 完成的工作
+
+**1. 新增 `front-react/scripts/test-draft-store.mjs`（22 场景 0 依赖）**
+
+延续 cron 13（logger）/ cron 14（previewInjectScript）的脚本化覆盖模式。draftStore.js（124 行）虽然逻辑简单（LRU 索引 + 截断 + 孤儿清理），但几个不变量非常容易在 refactor 时静默漂移：
+
+- **MAX_KEEP=20 / MAX_DRAFT_SIZE=20*1024** 这两个魔数如果被改成 5 / 50KB，用户长会话下 localStorage 配额会突然爆掉
+- **截断标记文案**（`…[草稿已截断,完整内容请尽快发送]`）如果漂移，用户看不到截断提示会困惑
+- **损坏 JSON 索引**的兜底（`JSON.parse` 失败回退到空数组）如果被改坏，老数据会让所有 load 抛错
+- **非数组输入** 的早返回（`if (!Array.isArray(...))`）是新的鲁棒性加固
+
+**模板沿用 cron 14**：0 依赖（仅 node 原生 `assert`），改完源码跑一遍立即知道有没有 regression。`localStorage` 用一个简单的 Map shim 顶替，22 个 test() 之前都 reset() 清空避免互相污染。
+
+**覆盖 22 场景**：
+
+- **基础（4 个）** — load 不存在返回 '' + 不创建索引、save→load 往返、save 空等价 remove
+- **截断（4 个）** — 20480 字符边界不截断 / 20481 触发截断 / 1MB 截断到 < 30KB / 非字符串输入不崩
+- **LRU 限流（4 个）** — 25 个 task 保留 20 个 + 最老 5 个被淘汰 / MAX_KEEP 字面量防漂移 / load 同一 task 移到队首 / touch 后老的被淘汰
+- **孤儿清理（3 个）** — 删草稿 + 过滤索引 + 返回数量 / 空数组早返回 / 非数组（null/undefined/字符串/对象）不崩
+- **索引防漂移（3 个）** — 损坏 JSON 回退 / 非数组 JSON 回退 / 单条非对象条目过滤
+- **其他（4 个）** — remove 删草稿+索引 / save 后最新在头部 / 自包含（无 require/import）/ setItem 抛错时 save 不崩
+
+**意外发现 + 修复**（这是测试覆盖最大的价值）：
+
+写"cleanupOrphans 接收非数组不崩"测试时 **第一个版本就 FAIL 了** — 源码的旧实现是 `if (!orphanIds || orphanIds.length === 0) return 0;`，对 null/undefined 走早返回，但**传字符串 `'garbage'` 就会进入 `orphanIds.forEach(...)` 抛 TypeError**。
+
+这是个**真实存在的静默 bug** — 如果 App.jsx 的 `validIds` 算错了（task 列表被外部清空等），传给 cleanupOrphans 就会让整个 mount 流程崩。修了：
+
+```js
+// 旧（脆弱）
+if (!orphanIds || orphanIds.length === 0) return 0;
+orphanIds.forEach(id => safeRemove(draftKey(id)));
+// ...
+return orphanIds.length;
+
+// 新（鲁棒）
+if (!Array.isArray(orphanIds) || orphanIds.length === 0) return 0;
+const valid = orphanIds.filter(id => typeof id === 'string' && id.length > 0);
+if (valid.length === 0) return 0;
+valid.forEach(id => safeRemove(draftKey(id)));
+const validSet = new Set(valid);
+const idx = readIndex().filter(e => !validSet.has(e.id));
+writeIndex(idx);
+return valid.length;
+```
+
+加固点：① `Array.isArray` 显式判断代替 `!orphanIds`（字符串/对象/null 都走早返回）② 用 `Set` 替代 `Array.includes`（孤儿列表长时 O(n) → O(1)）③ 返回的是有效清理数而不是入参长度（入参含非字符串元素时也能正确计数）。
+
+App.jsx line 220 调用方式（`draftStore.cleanupOrphans(orphans)`，orphans 是从 .map + .filter 出来的字符串数组）**完全兼容** — 加固纯增，不破坏现有调用。
+
+**2. 防漂移测试（"关键回归保护"）**
+
+第 10 个测试用例的设计意图：**未来 refactor 时如果有人把 `MAX_KEEP = 20` 改成 `MAX_KEEP = 5`，会立即 FAIL**。cron 14 的"数字字面量防漂移"思路（防止 `var restoreH = 3` 被改成 `var restoreH = "3"`）是同一套保护哲学 — 钉死源码中不可见但行为关键的字面量。
+
+**运行方式**：
+
+```bash
+node front-react/scripts/test-draft-store.mjs
+# result: 22 passed, 0 failed
+```
+
+**结果**：
+
+- 22/22 通过
+- backend/scripts/test-logger.mjs 复跑：10/10 仍通过（未受干扰）
+- front-react/scripts/test-preview-inject.mjs 复跑：20/20 仍通过（未受干扰）
+- 0 npm 依赖、0 build 步骤、跑完 < 100ms
+
+### Build
+
+- 前端：`npm run build` 0 错 0 警告
+- dist JS: `index-B0Q-B857.js` → `index-B11xvAlS.js`（268.53 → 268.63 KB，+0.1 KB / gzip 79.02 → 79.04 KB）
+- dist CSS: hash 不变（`index-CgHaPB5V.css`，80.50 KB）— 0 行 CSS 改动
+- 0 错误 0 警告
+- vite preview 验证（未跑，但 hash 变化反映 dist 已更新）
+
+### GitHub
+
+- commit: `23ca8bc` - test: draftStore 22 场景自检脚本 + cleanupOrphans 鲁棒性加固
+- 已 push 到 main：`dc2ac68..23ca8bc`
+- 4 files changed, 356 insertions(+), 6 deletions(-)
+  - `front-react/scripts/test-draft-store.mjs` +343（新增）
+  - `front-react/src/draftStore.js` +8 / -4（鲁棒性加固）
+  - `front-react/dist/assets/index-B0Q-B857.js` → `index-B11xvAlS.js`（rename）
+  - `front-react/dist/index.html`（hash 引用更新）
+
+### Vercel
+
+- 仍然不通：5 个 production 环境全部卡在 `f2cdcdb`（2026-05-30 初始 commit，10+ 天前的版本）
+- 需用户手动在 Vercel dashboard → Project Settings → Git → 重新连接 GitHub
+- 本次未改 vercel.json / front-react/src 主要逻辑（仅加固 12 行）→ 触发重连后 webhook 会重新部署最新 dist
+
+### 累计成果（自 6-05 第一次迭代算起）
+
+- 自检脚本覆盖到第三个核心模块（logger + previewInjectScript + **draftStore**）
+- `scripts/` 目录现在有 3 个文件：backend 1 + front-react 2
+- 脚本化覆盖 52 个场景：logger 10 + previewInjectScript 20 + **draftStore 22**
+- **发现并修复 1 个真 bug**：cleanupOrphans 传非数组（字符串/对象）会崩
+- 防漂移保护范围扩大：MAX_KEEP / MAX_DRAFT_SIZE / 截断标记文案 / LRU 索引结构全部被钉死
+
+### 下次迭代建议（按优先级）
+
+1. **Vercel 重新连接 GitHub**（高优 #1，阻塞所有新功能上线）— 需用户手动在 Vercel dashboard 操作
+2. **草稿导出/导入**（低优）— 跨设备用；现在整个 workspace state (ra_state_v3) + 草稿都只在本机 localStorage；可以用同一份 shim localStorage 思路做导出 + import 双向
+3. **ws.js 自检脚本**（低优）— front-react/src/ws.js（98 行）也没单测覆盖 WebSocket 重连退避 + 心跳检测逻辑；比 draftStore 更复杂（涉及定时器 + 模拟 ws server）
+4. **logger 自检脚本扩展**（低优）— 当前 10 个场景，可加：递归 ctx 防护、child 三层嵌套、ctx 含 Date 实例
+5. **package.json 加 `npm run test` 聚合脚本**（低优）— 把 3 个自检脚本串成 `npm run test:all`，跑一次全验证；也方便 CI 接入
